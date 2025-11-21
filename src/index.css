@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: var(--color-paper);
+  --color-ink: var(--color-ink);
+  --color-news: var(--color-news);
+  --color-news-light: var(--color-news-light);
+  --color-card: var(--color-card);
+  --color-border: var(--color-border);
+  --color-primary: var(--color-primary);
+  --color-secondary: var(--color-secondary);
+  
+  --font-serif: "Playfair Display", serif;
+  --font-sans: "Inter", sans-serif;
+}
+
+@layer base {
+  :root {
+    --color-paper: #F4F4F5; /* Zinc 100 */
+    --color-ink: #18181B;   /* Zinc 900 */
+    --color-news: #71717A;  /* Zinc 500 */
+    --color-news-light: #E4E4E7; /* Zinc 200 */
+    --color-card: #FFFFFF;
+    --color-border: #D4D4D8; /* Zinc 300 */
+    
+    /* Accents */
+    --color-primary: #8B5CF6; /* Violet 500 */
+    --color-secondary: #10B981; /* Emerald 500 */
+  }
+
+  .dark {
+    --color-paper: #09090B; /* Zinc 950 */
+    --color-ink: #FAFAFA;   /* Zinc 50 */
+    --color-news: #A1A1AA;  /* Zinc 400 */
+    --color-news-light: #27272A; /* Zinc 800 */
+    --color-card: #18181B;  /* Zinc 900 */
+    --color-border: #27272A; /* Zinc 800 */
+    
+    /* Accents */
+    --color-primary: #A78BFA; /* Violet 400 */
+    --color-secondary: #34D399; /* Emerald 400 */
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
+  }
+}

@@ -105,6 +105,29 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>About Us</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-ink">
+                Developed by Sahil Lakhani mainly known as diecsat online.
+              </p>
+              <a
+                href="https://github.com/Sahil-Lakhani"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline block"
+              >
+                https://github.com/Sahil-Lakhani
+              </a>
+              <div className="pt-4 border-t border-border text-center text-sm text-news">
+                <p>Developed by Sahil</p>
+                <p>Version 1.0</p>
+              </div>
+            </CardContent>
+          </Card>
         </>
       )}
     </div>

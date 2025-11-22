@@ -7,8 +7,12 @@ import { useNavigate, useLocation } from "react-router-dom"
 import { useEffect } from "react"
 import { analyzeReceipt } from "../lib/gemini"
 
+import { saveTransaction } from "../lib/firestore"
+import { useAuth } from "../context/AuthContext"
+
 export default function Scan() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [status, setStatus] = useState("idle") // idle, scanning, review, success
   const [file, setFile] = useState(null)
   const [extractedData, setExtractedData] = useState({
@@ -67,12 +71,39 @@ export default function Scan() {
     }
   }
 
-  const handleSave = () => {
-    // In a real app, this would save to the backend/context
-    setStatus("success")
-    setTimeout(() => {
-      navigate("/expenses")
-    }, 1500)
+  const handleSave = async () => {
+    if (!user) {
+      alert("Please log in to save transactions.")
+      return
+    }
+
+    setStatus("scanning") // Reuse scanning spinner or add a saving state
+    try {
+      const transactionData = {
+        merchant: extractedData.merchant,
+        date: extractedData.date,
+        total: parseFloat(extractedData.total || 0),
+        lineItems: extractedData.items.map(item => ({
+          name: item.name,
+          quantity: parseInt(item.quantity || 1),
+          price: parseFloat(item.price || 0),
+          totalPrice: parseFloat(item.price || 0) * parseInt(item.quantity || 1),
+          category: item.category
+        })),
+        email: user.email
+      }
+
+      await saveTransaction(user.uid, transactionData)
+
+      setStatus("success")
+      setTimeout(() => {
+        navigate("/expenses")
+      }, 1500)
+    } catch (error) {
+      console.error("Error saving transaction:", error)
+      alert("Failed to save transaction. Please try again.")
+      setStatus("review")
+    }
   }
 
   const handleCancel = () => {

@@ -125,8 +125,7 @@ export default function Scan() {
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <div>
-        <h2 className="text-3xl font-serif font-bold mb-2 text-ink">Scan Receipt</h2>
-        <p className="text-news">AI-powered receipt extraction.</p>
+        <h2 className="text-3xl font-sans font-bold mb-2">Scan Receipt</h2>
       </div>
 
       {status === "idle" && (
@@ -136,7 +135,7 @@ export default function Scan() {
               <Camera className="h-8 w-8 text-ink" />
             </div>
             <div className="text-center">
-              <h3 className="text-lg font-bold font-serif">Upload or Snap a Photo</h3>
+              <h3 className="text-lg font-bold font-sans">Upload or Snap a Photo</h3>
               <p className="text-news text-sm">Supported formats: JPG, PNG, PDF</p>
             </div>
             <div className="flex gap-4">
@@ -200,7 +199,7 @@ export default function Scan() {
           <CardContent className="flex flex-col items-center justify-center py-12 space-y-4">
             <Loader2 className="h-12 w-12 animate-spin text-ink" />
             <div className="text-center">
-              <h3 className="text-lg font-bold font-serif">Analyzing Receipt...</h3>
+              <h3 className="text-lg font-bold font-sans">Analyzing Receipt...</h3>
               <p className="text-news text-sm">Extracting merchant, date, and line items.</p>
             </div>
           </CardContent>
@@ -367,7 +366,7 @@ export default function Scan() {
               <Check className="h-8 w-8 text-green-600 dark:text-green-400" />
             </div>
             <div className="text-center">
-              <h3 className="text-lg font-bold font-serif text-green-800 dark:text-green-400">Expense Saved!</h3>
+              <h3 className="text-lg font-bold font-sans text-green-800 dark:text-green-400">Expense Saved!</h3>
               <p className="text-green-600 dark:text-green-500 text-sm">Redirecting to expenses...</p>
             </div>
           </CardContent>

@@ -17,7 +17,7 @@ export default function Settings() {
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <div>
-        <h2 className="text-3xl font-serif font-bold mb-2 text-ink">Settings</h2>
+        <h2 className="text-3xl font-sans font-bold mb-2 text-ink">Settings</h2>
         <p className="text-news">Manage your account and preferences.</p>
       </div>
 
@@ -58,7 +58,7 @@ export default function Settings() {
                 <img src={user.photoURL} alt={user.name} className="h-full w-full object-cover" />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-bold font-serif capitalize text-ink">{user.name}</h3>
+                <h3 className="text-lg font-bold font-sans capitalize text-ink">{user.name}</h3>
                 <p className="text-news">{user.email}</p>
               </div>
               <Button variant="secondary" onClick={logout}>

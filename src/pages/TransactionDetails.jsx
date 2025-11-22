@@ -75,7 +75,7 @@ export default function TransactionDetails() {
 					<Button variant="ghost" size="icon" onClick={() => navigate("/expenses")}>
 						<ArrowLeft className="h-5 w-5 text-ink" />
 					</Button>
-					<h2 className="text-2xl font-serif font-bold text-ink">Transaction Details</h2>
+					<h2 className="text-2xl font-sans font-bold text-ink">Transaction Details</h2>
 				</div>
 				<Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700 hover:bg-red-100" onClick={handleDelete}>
 					<Trash2 className="h-5 w-5" />

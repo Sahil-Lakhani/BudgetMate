@@ -77,7 +77,7 @@ export default function Expenses() {
   return (
     <div className="space-y-3">
       {/* <div>
-        <h2 className="text-3xl font-serif font-bold text-ink text-center">Expenses</h2>
+        <h2 className="text-3xl font-sans font-bold text-ink text-center">Expenses</h2>
         <p className="text-news">Manage your transaction history.</p>
       </div> */}
 

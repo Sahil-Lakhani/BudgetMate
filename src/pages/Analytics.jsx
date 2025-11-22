@@ -24,7 +24,7 @@ export default function Analytics() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-serif font-bold mb-2 text-ink">Analytics</h2>
+        <h2 className="text-3xl font-sans font-bold mb-2 text-ink">Analytics</h2>
         <p className="text-news">Deep dive into your spending habits.</p>
       </div>
 
@@ -78,14 +78,14 @@ export default function Analytics() {
               {topCategories.map((cat, idx) => (
                 <div key={cat.name} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-lg font-serif font-bold text-news-light">{idx + 1}</span>
+                    <span className="text-lg font-sans font-bold text-news-light">{idx + 1}</span>
                     <div>
                       <p className="font-medium">{cat.name}</p>
                       <p className="text-xs text-news">{cat.count} transactions</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold font-serif">€{cat.amount}</p>
+                    <p className="font-bold font-sans">€{cat.amount}</p>
                     <p className={`text-xs ${cat.trend.startsWith('+') ? 'text-red-500' : 'text-green-500'}`}>
                       {cat.trend}
                     </p>
@@ -102,11 +102,11 @@ export default function Analytics() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-4 bg-news-light/20 border border-news-light">
-              <h4 className="font-bold font-serif mb-1">Spending Alert</h4>
+              <h4 className="font-bold font-sans mb-1">Spending Alert</h4>
               <p className="text-sm text-news">Your food spending is 12% higher than last month. Consider cooking at home more often.</p>
             </div>
             <div className="p-4 bg-news-light/20 border border-news-light">
-              <h4 className="font-bold font-serif mb-1">Savings Opportunity</h4>
+              <h4 className="font-bold font-sans mb-1">Savings Opportunity</h4>
               <p className="text-sm text-news">You could save approx. €50/month by switching your streaming subscriptions.</p>
             </div>
           </CardContent>

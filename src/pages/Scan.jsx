@@ -54,6 +54,7 @@ export default function Scan() {
         const data = await analyzeReceipt(file)
         setExtractedData({
           merchant: data.merchant || "",
+          location: data.location || "",
           date: data.date || new Date().toISOString().split('T')[0],
           total: data.total?.toString() || "",
           items: data.items?.map(item => ({
@@ -211,6 +212,13 @@ export default function Scan() {
                 <Input
                   value={extractedData.merchant}
                   onChange={(e) => setExtractedData({ ...extractedData, merchant: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Location</label>
+                <Input
+                  value={extractedData.location}
+                  onChange={(e) => setExtractedData({ ...extractedData, location: e.target.value })}
                 />
               </div>
               <div className="space-y-2">

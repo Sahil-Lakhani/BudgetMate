@@ -81,11 +81,10 @@ export default function TransactionDetails() {
 									<Calendar className="h-3 w-3" />
 									<span>{transaction.date}</span>
 									{transaction.location && (
-										<>
-											<span>•</span>
+										<div className="hidden md:flex items-center gap-1 ">
 											<MapPin className="h-3 w-3" />
 											<span>{transaction.location}</span>
-										</>
+										</div>
 									)}
 								</div>
 							</div>
@@ -118,6 +117,11 @@ export default function TransactionDetails() {
 
 					<div className="text-xs text-news">
 						<div className="flex items-center gap-1 justify-center">
+							{transaction.location && (
+								<div className="md:hidden">
+									<span>Store Location: {transaction.location}</span>
+								</div>
+							)}
 							Source
 							<span className="capitalize">{transaction.source || "Manual"}</span>
 						</div>

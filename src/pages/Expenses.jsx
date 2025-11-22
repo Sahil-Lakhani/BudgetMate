@@ -16,6 +16,10 @@ export default function Expenses() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterCategory, setFilterCategory] = useState("All")
 
+  // Initialize with current month in YYYY-MM format
+  const currentMonth = new Date().toISOString().slice(0, 7)
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth)
+
   useEffect(() => {
     const fetchData = async () => {
       if (user?.uid) {
@@ -45,6 +49,12 @@ export default function Expenses() {
     return <Tag className="h-5 w-5 text-ink" />
   }
 
+  // Get unique months from transactions + current month
+  const availableMonths = [...new Set([
+    currentMonth,
+    ...transactions.map(t => t.date.slice(0, 7))
+  ])].sort().reverse()
+
   const filteredTransactions = transactions.filter((t) => {
     // Determine category for filtering (use first line item or general)
     const category = t.lineItems?.[0]?.category || "General"
@@ -52,7 +62,9 @@ export default function Expenses() {
     const matchesSearch = t.merchant.toLowerCase().includes(searchTerm.toLowerCase()) ||
       category.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = filterCategory === "All" || category === filterCategory
-    return matchesSearch && matchesCategory
+    const matchesMonth = t.date.startsWith(selectedMonth)
+
+    return matchesSearch && matchesCategory && matchesMonth
   })
 
   // Extract unique categories from all transactions' line items
@@ -63,17 +75,35 @@ export default function Expenses() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-serif font-bold mb-2 text-ink">Expenses</h2>
+    <div className="space-y-3">
+      {/* <div>
+        <h2 className="text-3xl font-serif font-bold text-ink text-center">Expenses</h2>
         <p className="text-news">Manage your transaction history.</p>
+      </div> */}
+
+      {/* Monthly Tabs */}
+      <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+        {availableMonths.map(month => {
+          const date = new Date(month + "-01")
+          const label = date.toLocaleDateString('default', { month: 'long', year: 'numeric' })
+          return (
+            <Button
+              key={month}
+              variant={selectedMonth === month ? "primary" : "outline"}
+              className="whitespace-nowrap px-6 rounded-[8px]"
+              onClick={() => setSelectedMonth(month)}
+            >
+              {label}
+            </Button>
+          )
+        })}
       </div>
 
       <div className="flex flex-col md:flex-row gap-4 items-end md:items-center justify-between">
         <div className="relative w-full md:w-96">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-news" />
           <Input
-            className="pl-10"
+            className="pl-10 rounded-[8px]"
             placeholder="Search merchant or category..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -82,6 +112,7 @@ export default function Expenses() {
         <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto">
           {categories.slice(0, 5).map(cat => ( // Limit to 5 categories for UI
             <Button
+              className="rounded-[8px]"
               key={cat}
               variant={filterCategory === cat ? "primary" : "secondary"}
               size="sm"
@@ -127,11 +158,11 @@ export default function Expenses() {
               ))
             ) : (
               <div className="text-center py-12 text-news">
-                No transactions found.
+                No transactions found for {new Date(selectedMonth + "-01").toLocaleDateString('default', { month: 'long' })}.
               </div>
             )}
           </div>
-        </CardContentTransaction>      
+        </CardContentTransaction>
       </Card>
     </div>
   )

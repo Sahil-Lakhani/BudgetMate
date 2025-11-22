@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { ArrowLeft, Calendar, MapPin, ShoppingBasket, Shirt, Smartphone, Coffee, Utensils, Car, Home, Zap, Tag } from "lucide-react"
+import { ArrowLeft, Calendar, MapPin, ShoppingBasket, Shirt, Smartphone, Coffee, Utensils, Car, Home, Zap, Tag, Trash2 } from "lucide-react"
 import { Button } from "../components/Button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/Card"
 import { Badge } from "../components/Badge"
 import { useAuth } from "../context/AuthContext"
-import { getTransaction } from "../lib/firestore"
+import { getTransaction, deleteTransaction } from "../lib/firestore"
 
 export default function TransactionDetails() {
 	const { id } = useParams()
@@ -29,6 +29,18 @@ export default function TransactionDetails() {
 		}
 		fetchTransaction()
 	}, [user, id])
+
+	const handleDelete = async () => {
+		if (confirm("Are you sure you want to delete this transaction?")) {
+			try {
+				await deleteTransaction(user.uid, id)
+				navigate("/expenses")
+			} catch (error) {
+				console.error("Error deleting transaction:", error)
+				alert("Failed to delete transaction.")
+			}
+		}
+	}
 
 	const getCategoryIcon = (category) => {
 		const cat = category?.toLowerCase() || ""
@@ -58,11 +70,16 @@ export default function TransactionDetails() {
 
 	return (
 		<div className="max-w-2xl mx-auto space-y-6">
-			<div className="flex items-center gap-4">
-				<Button variant="ghost" size="icon" onClick={() => navigate("/expenses")}>
-					<ArrowLeft className="h-5 w-5 text-ink" />
+			<div className="flex items-center justify-between">
+				<div className="flex items-center gap-4">
+					<Button variant="ghost" size="icon" onClick={() => navigate("/expenses")}>
+						<ArrowLeft className="h-5 w-5 text-ink" />
+					</Button>
+					<h2 className="text-2xl font-serif font-bold text-ink">Transaction Details</h2>
+				</div>
+				<Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700 hover:bg-red-100" onClick={handleDelete}>
+					<Trash2 className="h-5 w-5" />
 				</Button>
-				<h2 className="text-2xl font-serif font-bold text-ink">Transaction Details</h2>
 			</div>
 
 			<Card>

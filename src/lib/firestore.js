@@ -1,5 +1,5 @@
 import { db } from "./firebase"
-import { collection, getDocs, query, orderBy, addDoc, doc, setDoc, getDoc } from "firebase/firestore"
+import { collection, getDocs, query, orderBy, addDoc, doc, setDoc, getDoc, deleteDoc } from "firebase/firestore"
 
 export const getUserTransactions = async (userId) => {
   if (!userId) return []
@@ -64,6 +64,17 @@ export const getTransaction = async (userId, transactionId) => {
     }
   } catch (error) {
     console.error("Error fetching transaction:", error)
+    throw error
+  }
+}
+export const deleteTransaction = async (userId, transactionId) => {
+  if (!userId || !transactionId) throw new Error("User ID and Transaction ID are required")
+
+  try {
+    const docRef = doc(db, "users", userId, "transactions", transactionId)
+    await deleteDoc(docRef)
+  } catch (error) {
+    console.error("Error deleting transaction:", error)
     throw error
   }
 }

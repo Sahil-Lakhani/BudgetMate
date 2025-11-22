@@ -68,7 +68,7 @@ export function Layout({ children }) {
           })}
         </nav>
 
-        <div className="p-4 border-t border-border hidden md:block space-y-2">
+        <div className="p-4 border-t border-border space-y-2">
           {user && (
             <div className="flex items-center gap-3 px-2 mb-2">
               {user.photoURL && (
@@ -80,7 +80,7 @@ export function Layout({ children }) {
               </div>
             </div>
           )}
-          <Button variant="outline" className="w-full justify-start gap-2" onClick={toggleTheme}>
+          <Button variant="outline" className="w-full justify-start gap-2 hidden md:flex" onClick={toggleTheme}>
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
           </Button>

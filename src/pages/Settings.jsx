@@ -53,7 +53,7 @@ export default function Settings() {
             <CardHeader>
               <CardTitle>Profile</CardTitle>
             </CardHeader>
-            <CardContent className="flex items-center gap-4">
+            <CardContent className="flex flex-col md:flex-row items-start md:items-center gap-4">
               <div className="h-16 w-16 rounded-full bg-news-light overflow-hidden">
                 <img src={user.photoURL} alt={user.name} className="h-full w-full object-cover" />
               </div>

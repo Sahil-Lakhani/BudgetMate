@@ -2,17 +2,18 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/Card"
 import { Input } from "../components/Input"
 import { Badge } from "../components/Badge"
-import { Search, Filter, ChevronDown, ChevronUp, ShoppingBasket, Shirt, Smartphone, Coffee, Utensils, Car, Home, Zap, Tag } from "lucide-react"
+import { Search, Filter, ChevronRight, ShoppingBasket, Shirt, Smartphone, Coffee, Utensils, Car, Home, Zap, Tag } from "lucide-react"
 import { Button } from "../components/Button"
 import { useAuth } from "../context/AuthContext"
 import { getUserTransactions } from "../lib/firestore"
+import { useNavigate } from "react-router-dom"
 
 export default function Expenses() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-  const [expandedId, setExpandedId] = useState(null)
   const [filterCategory, setFilterCategory] = useState("All")
 
   useEffect(() => {
@@ -56,10 +57,6 @@ export default function Expenses() {
 
   // Extract unique categories from all transactions' line items
   const categories = ["All", ...new Set(transactions.flatMap(t => t.lineItems?.map(i => i.category) || []))]
-
-  const toggleExpand = (id) => {
-    setExpandedId(expandedId === id ? null : id)
-  }
 
   if (loading) {
     return <div className="p-8 text-center text-news">Loading expenses...</div>
@@ -107,7 +104,7 @@ export default function Expenses() {
                 <div
                   key={transaction.id}
                   className="border-2 border-transparent hover:border-news-light transition-colors bg-card pt-2 pb-2 cursor-pointer rounded-lg"
-                  onClick={() => toggleExpand(transaction.id)}
+                  onClick={() => navigate(`/expenses/${transaction.id}`)}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -123,43 +120,9 @@ export default function Expenses() {
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="font-bold font-serif text-ink">-${parseFloat(transaction.total).toFixed(2)}</span>
-                      {expandedId === transaction.id ? <ChevronUp className="h-4 w-4 text-ink" /> : <ChevronDown className="h-4 w-4 text-ink" />}
+                      <ChevronRight className="h-4 w-4 text-ink" />
                     </div>
                   </div>
-
-                  {expandedId === transaction.id && (
-                    <div className="mt-4 pt-4 border-t border-news-light/20 space-y-4 animate-in slide-in-from-top-2">
-
-                      {/* Line Items Table */}
-                      {transaction.lineItems && transaction.lineItems.length > 0 && (
-                        <div className="pr-6 mr-2 pl-6 ml-8">
-                          <p className="text-xs font-medium text-news mb-2 uppercase tracking-wider">Items</p>
-                          <div className="space-y-2">
-                            {transaction.lineItems.map((item, idx) => (
-                              <div key={idx} className="flex justify-between text-sm">
-                                <div>
-                                  <span className="text-ink font-medium">{item.name}</span>
-                                  <span className="text-news text-xs ml-2">x{item.quantity}</span>
-                                </div>
-                                <span className="text-ink">${parseFloat(item.totalPrice).toFixed(2)}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="text-news text-xs">Status</p>
-                          <Badge variant="secondary" className="mt-1">Completed</Badge>
-                        </div>
-                        <div>
-                          <p className="text-news text-xs">Transaction ID</p>
-                          <p className="font-mono mt-1 text-xs truncate">{transaction.id}</p>
-                        </div>
-                      </div> */}
-                    </div>
-                  )}
                 </div>
               ))
             ) : (

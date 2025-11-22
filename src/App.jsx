@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
 import { Layout } from "./components/Layout"
 import Dashboard from "./pages/Dashboard"
 import Expenses from "./pages/Expenses"
+import TransactionDetails from "./pages/TransactionDetails"
 import Scan from "./pages/Scan"
 import Analytics from "./pages/Analytics"
 import Settings from "./pages/Settings"
@@ -26,6 +27,7 @@ function App() {
                     <Routes>
                       <Route path="/" element={<Dashboard />} />
                       <Route path="/expenses" element={<Expenses />} />
+                      <Route path="/expenses/:id" element={<TransactionDetails />} />
                       <Route path="/scan" element={<Scan />} />
                       <Route path="/analytics" element={<Analytics />} />
                       <Route path="/settings" element={<Settings />} />

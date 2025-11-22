@@ -30,9 +30,9 @@ export default function Settings() {
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Email Address</label>
-                <Input 
-                  type="email" 
-                  placeholder="Enter your email" 
+                <Input
+                  type="email"
+                  placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required

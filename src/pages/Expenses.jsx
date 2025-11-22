@@ -124,6 +124,17 @@ export default function Expenses() {
         </div>
       </div>
 
+      {/* Monthly Total */}
+      <div className="bg-card p-3 rounded-lg border border-border flex justify-between items-center shadow-sm">
+        <div>
+          <p className="text-sm text-news font-medium">Total Expenses</p>
+          <p className="text-xs text-news/60">{new Date(selectedMonth + "-01").toLocaleDateString('default', { month: 'long', year: 'numeric' })}</p>
+        </div>
+        <p className="text-2xl font-bold text-ink">
+          €{filteredTransactions.reduce((sum, t) => sum + parseFloat(t.total), 0).toFixed(2)}
+        </p>
+      </div>
+
       <Card>
         <CardContentTransaction>
           <div className="space-y-2 my-2">

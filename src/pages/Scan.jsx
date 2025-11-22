@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/Card"
 import { Button } from "../components/Button"
 import { Input } from "../components/Input"
-import { Upload, Camera, Loader2, Check, X, Plus } from "lucide-react"
+import { Upload, Camera, Loader2, Check, X, Plus, Trash2 } from "lucide-react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { useEffect } from "react"
 import { analyzeReceipt } from "../lib/gemini"
@@ -69,6 +69,12 @@ export default function Scan() {
         // Could add error toast here
       }
     }
+  }
+
+  const handleDeleteItem = (index) => {
+    const newItems = [...extractedData.items]
+    newItems.splice(index, 1)
+    setExtractedData({ ...extractedData, items: newItems })
   }
 
   const handleSave = async () => {
@@ -219,8 +225,10 @@ export default function Scan() {
               <label className="text-sm font-medium">Line Items</label>
               <div className="border-2 border-news-light p-4 space-y-3">
                 {extractedData.items.map((item, idx) => (
-                  <div key={idx} className="grid grid-cols-12 gap-2 items-start border-b border-border pb-2 last:border-0 last:pb-0">
-                    <div className="col-span-12 md:col-span-4">
+                  <div key={idx} className="grid grid-cols-12 gap-2 items-center border-b border-border pb-2 last:border-0 last:pb-0">
+
+                    {/* Desktop: Name (4 cols) */}
+                    <div className="col-span-10 md:col-span-4">
                       <label className="text-xs text-news mb-1 block md:hidden">Item</label>
                       <Input
                         value={item.name}
@@ -232,7 +240,21 @@ export default function Scan() {
                         }}
                       />
                     </div>
-                    <div className="col-span-4 md:col-span-3">
+
+                    {/* Mobile: Delete Button (2 cols, Row 1) - Desktop: Hidden here, shown at end */}
+                    <div className="col-span-2 md:hidden flex justify-end items-end h-full pb-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/20"
+                        onClick={() => handleDeleteItem(idx)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {/* Desktop: Category (3 cols) - Mobile: Row 2 (5 cols) */}
+                    <div className="col-span-5 md:col-span-3">
                       <label className="text-xs text-news mb-1 block md:hidden">Category</label>
                       <Input
                         value={item.category}
@@ -244,7 +266,9 @@ export default function Scan() {
                         }}
                       />
                     </div>
-                    <div className="col-span-4 md:col-span-2">
+
+                    {/* Desktop: Qty (2 cols) - Mobile: Row 2 (3 cols) */}
+                    <div className="col-span-3 md:col-span-2">
                       <label className="text-xs text-news mb-1 block md:hidden">Qty</label>
                       <Input
                         value={item.quantity}
@@ -257,7 +281,9 @@ export default function Scan() {
                         }}
                       />
                     </div>
-                    <div className="col-span-4 md:col-span-3">
+
+                    {/* Desktop: Price (2 cols) - Mobile: Row 2 (4 cols) */}
+                    <div className="col-span-4 md:col-span-2">
                       <label className="text-xs text-news mb-1 block md:hidden">Price</label>
                       <Input
                         value={item.price}
@@ -271,9 +297,19 @@ export default function Scan() {
                       />
                     </div>
 
+                    {/* Desktop: Delete Button (1 col) - Mobile: Hidden (shown in Row 1) */}
+                    <div className="hidden md:flex col-span-1 justify-center">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/20"
+                        onClick={() => handleDeleteItem(idx)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+
                   </div>
-
-
                 ))}
 
                 {/* <Button variant="ghost" size="sm" className="w-full border-dashed border-2 border-news-light">

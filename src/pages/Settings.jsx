@@ -1,9 +1,11 @@
+// TODO: Github and Linkedin icons are deprecated, remove them later.
+
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/Card"
 import { Button } from "../components/Button"
 import { Input } from "../components/Input"
 import { useAuth } from "../context/AuthContext"
-import { User, Mail, Shield, LogOut, Bell, Moon } from "lucide-react"
+import { User, Mail, Shield, LogOut, Bell, Moon, Github, Linkedin } from "lucide-react"
 
 export default function Settings() {
   const { user, login, logout } = useAuth()
@@ -54,21 +56,23 @@ export default function Settings() {
               <CardTitle>Profile</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col md:flex-row items-start md:items-center gap-4">
-              <div className="h-16 w-16 rounded-full bg-news-light overflow-hidden">
-                <img src={user.photoURL} alt={user.name} className="h-full w-full object-cover" />
+              <div className="flex items-center gap-4">
+                <div className="h-16 w-16 rounded-full bg-news-light overflow-hidden">
+                  <img src={user.photoURL} alt={user.name} className="h-full w-full object-cover" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold font-sans capitalize text-ink">{user.name}</h3>
+                  <p className="text-xl text-news">{user.email}</p>
+                </div>
               </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold font-sans capitalize text-ink">{user.name}</h3>
-                <p className="text-news">{user.email}</p>
-              </div>
-              <Button variant="secondary" onClick={logout}>
+              <Button variant="secondary" onClick={logout} className="w-full">
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
               </Button>
             </CardContent>
           </Card>
 
-          <Card>
+          {/* <Card>
             <CardHeader>
               <CardTitle>Preferences</CardTitle>
             </CardHeader>
@@ -104,30 +108,43 @@ export default function Settings() {
                 <Button variant="ghost" size="sm">Edit</Button>
               </div>
             </CardContent>
-          </Card>
+            </Card> */}
+            <div className="text-center text-sm text-news space-y-1">
+              <div className="flex justify-center gap-4 pt-2">
+                <a
+                  href="https://github.com/Sahil-Lakhani"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-ink hover:text-blue-500 transition"
+                >
+                  <Github className="w-6 h-6" />
+                </a>
 
-          <Card>
+                <a
+                  href="https://www.linkedin.com/in/YOUR-LINKEDIN-USERNAME"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-ink hover:text-blue-500 transition"
+                >
+                  <Linkedin className="w-6 h-6" />
+                </a>
+              </div>
+              <p className="font-medium">Developed by Sahil</p>
+              <p className="text-muted-foreground">Version 1.0</p>
+            </div>
+
+          {/* <Card>
             <CardHeader>
-              <CardTitle>About Us</CardTitle>
+              <CardTitle className="text-xl font-semibold">About Me</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-ink">
-                Developed by Sahil Lakhani mainly known as diecsat online.
+              <p className="text-sm text-ink leading-relaxed">
+                BudgetMate is developed by <span className="font-medium">Sahil Lakhani</span>,
+                known online as <span className="font-semibold">diecsat</span>.
               </p>
-              <a
-                href="https://github.com/Sahil-Lakhani"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline block"
-              >
-                https://github.com/Sahil-Lakhani
-              </a>
-              <div className="pt-4 border-t border-border text-center text-sm text-news">
-                <p>Developed by Sahil</p>
-                <p>Version 1.0</p>
-              </div>
             </CardContent>
-          </Card>
+          </Card> */}
+
         </>
       )}
     </div>

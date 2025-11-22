@@ -17,6 +17,7 @@ export default function Scan() {
   const [file, setFile] = useState(null)
   const [extractedData, setExtractedData] = useState({
     merchant: "",
+    location: "",
     date: "",
     total: "",
     items: []
@@ -87,6 +88,7 @@ export default function Scan() {
     try {
       const transactionData = {
         merchant: extractedData.merchant,
+        location: extractedData.location,
         date: extractedData.date,
         total: parseFloat(extractedData.total || 0),
         lineItems: extractedData.items.map(item => ({

@@ -17,6 +17,7 @@ export async function analyzeReceipt(imageFile) {
     const prompt = `Analyze this receipt image and extract the following information in JSON format:
 {
   "merchant": "store/business name",
+  "location": "store/business location",
   "total": "total amount spent (as a number)",
   "date": "transaction date (YYYY-MM-DD format)",
   "items": [

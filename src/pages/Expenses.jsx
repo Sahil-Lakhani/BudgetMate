@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/Card"
 import { Input } from "../components/Input"
 import { Badge } from "../components/Badge"
-import { Search, Filter, ChevronDown, ChevronUp } from "lucide-react"
+import { Search, Filter, ChevronDown, ChevronUp, ShoppingBasket, Shirt, Smartphone, Coffee, Utensils, Car, Home, Zap, Tag } from "lucide-react"
 import { Button } from "../components/Button"
 import { useAuth } from "../context/AuthContext"
 import { getUserTransactions } from "../lib/firestore"
@@ -30,6 +30,19 @@ export default function Expenses() {
     }
     fetchData()
   }, [user])
+
+  const getCategoryIcon = (category) => {
+    const cat = category.toLowerCase()
+    if (cat.includes("grocer") || cat.includes("food")) return <ShoppingBasket className="h-5 w-5 text-ink" />
+    if (cat.includes("cloth") || cat.includes("wear")) return <Shirt className="h-5 w-5 text-ink" />
+    if (cat.includes("electr") || cat.includes("mobile") || cat.includes("phone")) return <Smartphone className="h-5 w-5 text-ink" />
+    if (cat.includes("transport") || cat.includes("gas") || cat.includes("fuel") || cat.includes("uber")) return <Car className="h-5 w-5 text-ink" />
+    if (cat.includes("home") || cat.includes("rent") || cat.includes("house")) return <Home className="h-5 w-5 text-ink" />
+    if (cat.includes("util") || cat.includes("bill") || cat.includes("internet")) return <Zap className="h-5 w-5 text-ink" />
+    if (cat.includes("restaurant") || cat.includes("dining") || cat.includes("eat")) return <Utensils className="h-5 w-5 text-ink" />
+    if (cat.includes("coffee") || cat.includes("cafe")) return <Coffee className="h-5 w-5 text-ink" />
+    return <Tag className="h-5 w-5 text-ink" />
+  }
 
   const filteredTransactions = transactions.filter((t) => {
     // Determine category for filtering (use first line item or general)
@@ -93,13 +106,13 @@ export default function Expenses() {
               filteredTransactions.map((transaction) => (
                 <div
                   key={transaction.id}
-                  className="border-2 border-transparent hover:border-news-light transition-colors bg-card p-4 cursor-pointer rounded-lg"
+                  className="border-2 border-transparent hover:border-news-light transition-colors bg-card pt-2 pb-2 cursor-pointer rounded-lg"
                   onClick={() => toggleExpand(transaction.id)}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="h-10 w-10 bg-news-light/20 flex items-center justify-center rounded-full">
-                        <span className="font-serif font-bold text-ink">{transaction.merchant[0]}</span>
+                        {getCategoryIcon(transaction.lineItems?.[0]?.category || "General")}
                       </div>
                       <div>
                         <p className="font-bold text-ink">{transaction.merchant}</p>
@@ -119,7 +132,7 @@ export default function Expenses() {
 
                       {/* Line Items Table */}
                       {transaction.lineItems && transaction.lineItems.length > 0 && (
-                        <div>
+                        <div className="pr-6 mr-2 pl-6 ml-8">
                           <p className="text-xs font-medium text-news mb-2 uppercase tracking-wider">Items</p>
                           <div className="space-y-2">
                             {transaction.lineItems.map((item, idx) => (
@@ -135,7 +148,7 @@ export default function Expenses() {
                         </div>
                       )}
 
-                      <div className="grid grid-cols-2 gap-4 text-sm">
+                      {/* <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <p className="text-news text-xs">Status</p>
                           <Badge variant="secondary" className="mt-1">Completed</Badge>
@@ -144,7 +157,7 @@ export default function Expenses() {
                           <p className="text-news text-xs">Transaction ID</p>
                           <p className="font-mono mt-1 text-xs truncate">{transaction.id}</p>
                         </div>
-                      </div>
+                      </div> */}
                     </div>
                   )}
                 </div>

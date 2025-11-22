@@ -157,7 +157,7 @@ export default function Scan() {
                   type="file"
                   className="absolute inset-0 opacity-0 cursor-pointer"
                   accept="image/*"
-                  capture="environment"
+                  {...(/Android/i.test(navigator.userAgent) ? { capture: "environment" } : {})}
                   onChange={handleFileUpload}
                 />
               </Button>

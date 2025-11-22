@@ -118,6 +118,7 @@ export function Layout({ children }) {
             type="file"
             className="hidden"
             accept="image/*"
+            {...(/Android/i.test(navigator.userAgent) ? { capture: "environment" } : {})}
             onChange={(e) => {
               const file = e.target.files[0]
               if (file) {

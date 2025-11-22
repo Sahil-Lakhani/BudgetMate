@@ -150,9 +150,16 @@ export default function Scan() {
                   onChange={handleFileUpload}
                 />
               </Button>
-              <Button variant="secondary" className="md:hidden">
+              <Button variant="secondary" className="md:hidden relative">
                 <Camera className="mr-2 h-4 w-4" />
                 Use Camera
+                <input
+                  type="file"
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleFileUpload}
+                />
               </Button>
             </div>
           </CardContent>

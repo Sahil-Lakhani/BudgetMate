@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "../components/Card"
+import { Card, CardContentTransaction, CardHeader, CardTitle } from "../components/Card"
 import { Input } from "../components/Input"
 import { Badge } from "../components/Badge"
 import { Search, Filter, ChevronRight, ShoppingBasket, Shirt, Smartphone, Coffee, Utensils, Car, Home, Zap, Tag } from "lucide-react"
@@ -94,16 +94,13 @@ export default function Expenses() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Transaction History</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
+        <CardContentTransaction>
+          <div className="space-y-2 my-2">
             {filteredTransactions.length > 0 ? (
               filteredTransactions.map((transaction) => (
                 <div
                   key={transaction.id}
-                  className="border-2 border-transparent hover:border-news-light transition-colors bg-card pt-2 pb-2 cursor-pointer rounded-lg"
+                  className="bg-card  cursor-pointer rounded-lg"
                   onClick={() => navigate(`/expenses/${transaction.id}`)}
                 >
                   <div className="flex items-center justify-between">
@@ -119,10 +116,13 @@ export default function Expenses() {
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="font-bold font-serif text-ink">-${parseFloat(transaction.total).toFixed(2)}</span>
+                      <span className="font-bold text-lg text-ink">- €{parseFloat(transaction.total).toFixed(2)}</span>
                       <ChevronRight className="h-4 w-4 text-ink" />
                     </div>
                   </div>
+                  {transaction !== filteredTransactions[filteredTransactions.length - 1] && (
+                    <div className="border-b border-gray-500 my-3 mx-2" />
+                  )}
                 </div>
               ))
             ) : (
@@ -131,7 +131,7 @@ export default function Expenses() {
               </div>
             )}
           </div>
-        </CardContent>
+        </CardContentTransaction>      
       </Card>
     </div>
   )

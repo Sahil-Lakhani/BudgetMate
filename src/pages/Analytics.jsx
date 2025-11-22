@@ -49,7 +49,7 @@ export default function Analytics() {
                   fontSize={12} 
                   tickLine={false} 
                   axisLine={false} 
-                  tickFormatter={(value) => `$${value}`} 
+                  tickFormatter={(value) => `€${value}`} 
                 />
                 <Tooltip 
                   cursor={{ fill: theme === 'dark' ? '#171717' : '#F0F0F0' }}
@@ -85,7 +85,7 @@ export default function Analytics() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold font-serif">${cat.amount}</p>
+                    <p className="font-bold font-serif">€{cat.amount}</p>
                     <p className={`text-xs ${cat.trend.startsWith('+') ? 'text-red-500' : 'text-green-500'}`}>
                       {cat.trend}
                     </p>
@@ -107,7 +107,7 @@ export default function Analytics() {
             </div>
             <div className="p-4 bg-news-light/20 border border-news-light">
               <h4 className="font-bold font-serif mb-1">Savings Opportunity</h4>
-              <p className="text-sm text-news">You could save approx. $50/month by switching your streaming subscriptions.</p>
+              <p className="text-sm text-news">You could save approx. €50/month by switching your streaming subscriptions.</p>
             </div>
           </CardContent>
         </Card>

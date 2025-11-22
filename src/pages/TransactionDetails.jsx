@@ -76,7 +76,6 @@ export default function TransactionDetails() {
 							<div className="flex-1">
 								<div className="flex items-center justify-between md:justify-start">
 									<h3 className="text-xl font-bold text-ink">{transaction.merchant}</h3>
-									<p className="text-xl font-bold text-ink md:hidden">${parseFloat(transaction.total).toFixed(2)}</p>
 								</div>
 								<div className="flex items-center gap-2 text-news text-sm mt-1">
 									<Calendar className="h-3 w-3" />
@@ -90,10 +89,14 @@ export default function TransactionDetails() {
 									)}
 								</div>
 							</div>
+							<div className=" items-center gap-2 text-news text-sm mt-1">
+								<div className="text-xl font-bold text-ink md:hidden">€{parseFloat(transaction.total).toFixed(2)}</div>
+								<p className="font-bold text-news md:hidden text-right">Total</p>
+							</div>
 						</div>
 						<div className="text-left md:text-right hidden md:block">
-							<p className="text-2xl font-bold text-ink">${parseFloat(transaction.total).toFixed(2)}</p>
-							<p className="text-md font-bold text-news">Total</p>
+							<p className="text-2xl font-bold text-ink">€{parseFloat(transaction.total).toFixed(2)}</p>
+							<p className="font-bold text-news">Total</p>
 						</div>
 					</div>
 
@@ -107,7 +110,7 @@ export default function TransactionDetails() {
 										<p className="font-medium text-ink">{item.name}</p>
 										<p className="text-xs text-news">{item.category} • Qty: {item.quantity}</p>
 									</div>
-									<p className="font-medium text-ink">${parseFloat(item.totalPrice || item.price).toFixed(2)}</p>
+									<p className="font-medium text-ink">€{parseFloat(item.totalPrice || item.price).toFixed(2)}</p>
 								</div>
 							))}
 						</div>

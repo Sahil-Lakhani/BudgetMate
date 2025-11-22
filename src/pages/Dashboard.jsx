@@ -143,7 +143,7 @@ export default function Dashboard() {
             <DollarSign className="h-4 w-4 text-ink" />
           </CardHeader>
           <CardContent className="p-0">
-            <div className="text-2xl font-bold font-serif text-ink">${stats.monthlyTotal.toFixed(2)}</div>
+            <div className="text-2xl font-bold font-serif text-ink">€{stats.monthlyTotal.toFixed(2)}</div>
             <p className="text-xs text-news mt-1">Current month spending</p>
           </CardContent>
         </Card>
@@ -155,7 +155,7 @@ export default function Dashboard() {
             <Calendar className="h-4 w-4 text-ink" />
           </CardHeader>
           <CardContent className="p-0">
-            <div className="text-2xl font-bold font-serif text-ink">${stats.yearlyTotal.toFixed(2)}</div>
+            <div className="text-2xl font-bold font-serif text-ink">€{stats.yearlyTotal.toFixed(2)}</div>
             <p className="text-xs text-news mt-1">Year to date</p>
           </CardContent>
         </Card>
@@ -168,7 +168,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="text-2xl font-bold font-serif text-ink truncate">{stats.highestCategory.name}</div>
-            <p className="text-xs text-news mt-1">${stats.highestCategory.value.toFixed(2)} this month</p>
+            <p className="text-xs text-news mt-1">€{stats.highestCategory.value.toFixed(2)} this month</p>
           </CardContent>
         </Card>
         <Card className="p-4">
@@ -179,7 +179,7 @@ export default function Dashboard() {
             <ArrowUpRight className="h-4 w-4 text-ink" />
           </CardHeader>
           <CardContent className="p-0">
-            <div className="text-2xl font-bold font-serif text-ink">${stats.dailyAverage.toFixed(2)}</div>
+            <div className="text-2xl font-bold font-serif text-ink">€{stats.dailyAverage.toFixed(2)}</div>
             <p className="text-xs text-news mt-1">This month</p>
           </CardContent>
         </Card>
@@ -218,7 +218,7 @@ export default function Dashboard() {
                           color: theme === 'dark' ? '#EDEDED' : '#1A1A1A'
                         }}
                         itemStyle={{ color: theme === 'dark' ? '#EDEDED' : '#1A1A1A', fontFamily: 'Inter' }}
-                        formatter={(value) => `$${value.toFixed(2)}`}
+                        formatter={(value) => `€${value.toFixed(2)}`}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -258,7 +258,7 @@ export default function Dashboard() {
                       </p>
                     </div>
                     <div className="font-bold font-serif text-ink text-sm">
-                      -${parseFloat(transaction.total).toFixed(2)}
+                      -€{parseFloat(transaction.total).toFixed(2)}
                     </div>
                   </div>
                 ))

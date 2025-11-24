@@ -335,7 +335,7 @@ export default function Scan() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Total Amount</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold">€</span>
                   <Input
                     className="pl-6 font-bold"
                     value={extractedData.total}

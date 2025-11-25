@@ -93,3 +93,32 @@ export const deleteTransaction = async (userId, transactionId) => {
     throw error
   }
 }
+
+export const getUserSettings = async (userId) => {
+  if (!userId) return null
+  
+  try {
+    const userRef = doc(db, "users", userId)
+    const docSnap = await getDoc(userRef)
+    
+    if (docSnap.exists()) {
+      return docSnap.data().settings || null
+    }
+    return null
+  } catch (error) {
+    console.error("Error fetching user settings:", error)
+    throw error
+  }
+}
+
+export const updateUserSettings = async (userId, settings) => {
+  if (!userId) throw new Error("User ID is required")
+
+  try {
+    const userRef = doc(db, "users", userId)
+    await setDoc(userRef, { settings }, { merge: true })
+  } catch (error) {
+    console.error("Error updating user settings:", error)
+    throw error
+  }
+}

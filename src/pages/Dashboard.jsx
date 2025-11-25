@@ -4,7 +4,8 @@ import { ArrowUpRight, ArrowDownRight, DollarSign, TrendingUp, Calendar } from "
 import { useTheme } from "../context/ThemeContext"
 import { useEffect, useState } from "react"
 import { useAuth } from "../context/AuthContext"
-import { getUserTransactions } from "../lib/firestore"
+import { getUserTransactions, getUserSettings, updateUserSettings } from "../lib/firestore"
+import { X } from "lucide-react"
 
 const COLORS = {
   light: ["#8B5CF6", "#10B981", "#F59E0B", "#EF4444", "#3B82F6", "#EC4899", "#6366F1"],
@@ -20,17 +21,39 @@ export default function Dashboard() {
     monthlyTotal: 0,
     yearlyTotal: 0,
     highestCategory: { name: "N/A", value: 0 },
-    dailyAverage: 0
+    monthlyTotal: 0,
+    yearlyTotal: 0,
+    highestCategory: { name: "N/A", value: 0 },
+    dailyAverage: 0,
+    income: 0,
+    savingsGoal: 0,
+    savingsAmount: 0,
+    spendableAmount: 0,
+    remainingSpendable: 0
   })
   const [chartData, setChartData] = useState([])
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
+  const [tempSettings, setTempSettings] = useState({
+    income: "",
+    savingsType: "percentage", // or "fixed"
+    savingsValue: ""
+  })
 
   useEffect(() => {
     const fetchData = async () => {
       if (user?.uid) {
         try {
-          const data = await getUserTransactions(user.uid)
+          const [data, settings] = await Promise.all([
+            getUserTransactions(user.uid),
+            getUserSettings(user.uid)
+          ])
+
+          if (!settings || !settings.income) {
+            setShowSettingsModal(true)
+          }
+
           setTransactions(data)
-          calculateStats(data)
+          calculateStats(data, settings)
         } catch (error) {
           console.error("Error loading dashboard data:", error)
         } finally {
@@ -41,7 +64,7 @@ export default function Dashboard() {
     fetchData()
   }, [user])
 
-  const calculateStats = (data) => {
+  const calculateStats = (data, settings) => {
     const now = new Date()
     const currentMonth = now.toISOString().slice(0, 7) // YYYY-MM
     const currentYear = now.getFullYear()
@@ -95,11 +118,39 @@ export default function Dashboard() {
     const daysPassed = now.getDate()
     const dailyAverage = daysPassed > 0 ? monthlyTotal / daysPassed : 0
 
+
+    // Income & Savings Logic
+    let income = 0
+    let savingsGoal = 0
+    let savingsAmount = 0
+    let spendableAmount = 0
+    let remainingSpendable = 0
+
+    if (settings && settings.income) {
+      income = parseFloat(settings.income)
+      const savingsValue = parseFloat(settings.savingsValue || 0)
+
+      if (settings.savingsType === 'percentage') {
+        savingsAmount = (income * savingsValue) / 100
+        savingsGoal = savingsValue // Store percentage for display if needed
+      } else {
+        savingsAmount = savingsValue
+        savingsGoal = savingsValue
+      }
+
+      spendableAmount = income - savingsAmount
+      remainingSpendable = spendableAmount - monthlyTotal
+    }
+
     setStats({
       monthlyTotal,
       yearlyTotal,
       highestCategory,
-      dailyAverage
+      dailyAverage,
+      income,
+      savingsAmount,
+      spendableAmount,
+      remainingSpendable
     })
 
     // Chart Data
@@ -134,19 +185,64 @@ export default function Dashboard() {
       </div>
 
       {/* Real-Time Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Real-Time Stats */}
+      <div className="grid gap-4 grid-cols-2">
+        {/* Row 1: Monthly Income, Monthly Savings */}
         <Card className="p-4">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0 mb-2 border-0">
             <CardTitle className="text-sm font-medium font-sans text-news">
-              Monthly Total
+              Monthly Income
             </CardTitle>
             <DollarSign className="h-4 w-4 text-ink" />
           </CardHeader>
           <CardContent className="p-0">
-            <div className="text-2xl font-bold font-sans text-ink">€{stats.monthlyTotal.toFixed(2)}</div>
-            <p className="text-xs text-news mt-1">Current month spending</p>
+            <div className="text-2xl font-bold font-sans text-ink">
+              {stats.income > 0 ? (
+                `€${stats.income.toFixed(2)}`
+              ) : (
+                <button
+                  onClick={() => setShowSettingsModal(true)}
+                  className="w-full text-sm font-medium text-ink border border-border rounded px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                >
+                  Set
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-news mt-1">Total monthly earnings</p>
           </CardContent>
         </Card>
+
+        <Card className="p-4">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0 mb-2 border-0">
+            <CardTitle className="text-sm font-medium font-sans text-news">
+              Monthly Savings
+            </CardTitle>
+            <TrendingUp className="h-4 w-4 text-ink" />
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="text-2xl font-bold font-sans text-ink">
+              €{stats.savingsAmount.toFixed(2)}
+            </div>
+            <p className="text-xs text-news mt-1">Target savings</p>
+          </CardContent>
+        </Card>
+
+        {/* Row 2: Remaining Spendable, Yearly Total */}
+        <Card className="p-4">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0 mb-2 border-0">
+            <CardTitle className="text-sm font-medium font-sans text-news">
+              Remaining Budget
+            </CardTitle>
+            <DollarSign className="h-4 w-4 text-ink" />
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className={`text-2xl font-bold font-sans ${stats.remainingSpendable < 0 ? 'text-red-500' : 'text-ink'}`}>
+              €{stats.remainingSpendable.toFixed(2)}
+            </div>
+            <p className="text-xs text-news mt-1">After savings & expenses</p>
+          </CardContent>
+        </Card>
+
         <Card className="p-4">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0 mb-2 border-0">
             <CardTitle className="text-sm font-medium font-sans text-news">
@@ -159,31 +255,107 @@ export default function Dashboard() {
             <p className="text-xs text-news mt-1">Year to date</p>
           </CardContent>
         </Card>
+
+        {/* Row 3: Spendable Amount */}
         <Card className="p-4">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0 mb-2 border-0">
             <CardTitle className="text-sm font-medium font-sans text-news">
-              Highest Category
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-ink" />
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="text-2xl font-bold font-sans text-ink truncate">{stats.highestCategory.name}</div>
-            <p className="text-xs text-news mt-1">€{stats.highestCategory.value.toFixed(2)} this month</p>
-          </CardContent>
-        </Card>
-        <Card className="p-4">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0 mb-2 border-0">
-            <CardTitle className="text-sm font-medium font-sans text-news">
-              Daily Average
+              Spendable Budget
             </CardTitle>
             <ArrowUpRight className="h-4 w-4 text-ink" />
           </CardHeader>
           <CardContent className="p-0">
-            <div className="text-2xl font-bold font-sans text-ink">€{stats.dailyAverage.toFixed(2)}</div>
-            <p className="text-xs text-news mt-1">This month</p>
+            <div className="text-2xl font-bold font-sans text-ink">€{stats.spendableAmount.toFixed(2)}</div>
+            <p className="text-xs text-news mt-1">Income minus savings</p>
+          </CardContent>
+        </Card>
+
+        <Card className="p-4">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0 mb-2 border-0">
+            <CardTitle className="text-sm font-medium font-sans text-news">
+              Monthly Spent
+            </CardTitle>
+            <ArrowDownRight className="h-4 w-4 text-ink" />
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="text-2xl font-bold font-sans text-ink">€{stats.monthlyTotal.toFixed(2)}</div>
+            <p className="text-xs text-news mt-1">{new Date().toLocaleString('en-US', { month: 'long' })} expenses</p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Settings Modal */}
+      {showSettingsModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-neutral-900 rounded-lg p-6 w-full max-w-md shadow-xl border border-neutral-200 dark:border-neutral-800">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-ink">Setup Your Budget</h3>
+              <button onClick={() => setShowSettingsModal(false)} className="text-news hover:text-ink">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="text-sm text-news mb-6">
+              Please enter your monthly income and savings goal to calculate your budget.
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-ink mb-1">Monthly Income (€)</label>
+                <input
+                  type="number"
+                  value={tempSettings.income}
+                  onChange={(e) => setTempSettings({ ...tempSettings, income: e.target.value })}
+                  className="w-full p-2 rounded-md border border-border bg-transparent text-ink focus:outline-none focus:ring-2 focus:ring-ink"
+                  placeholder="e.g. € 3000"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-ink mb-1">Savings Goal</label>
+                <div className="flex gap-2 mb-2">
+                  <button
+                    onClick={() => setTempSettings({ ...tempSettings, savingsType: 'percentage' })}
+                    className={`flex-1 py-1 px-2 text-xs rounded-md border ${tempSettings.savingsType === 'percentage' ? 'bg-ink text-paper border-ink' : 'border-border text-news'}`}
+                  >
+                    Percentage (%)
+                  </button>
+                  <button
+                    onClick={() => setTempSettings({ ...tempSettings, savingsType: 'fixed' })}
+                    className={`flex-1 py-1 px-2 text-xs rounded-md border ${tempSettings.savingsType === 'fixed' ? 'bg-ink text-paper border-ink' : 'border-border text-news'}`}
+                  >
+                    Fixed Amount (€)
+                  </button>
+                </div>
+                <input
+                  type="number"
+                  value={tempSettings.savingsValue}
+                  onChange={(e) => setTempSettings({ ...tempSettings, savingsValue: e.target.value })}
+                  className="w-full p-2 rounded-md border border-border bg-transparent text-ink focus:outline-none focus:ring-2 focus:ring-ink"
+                  placeholder={tempSettings.savingsType === 'percentage' ? "e.g. 20%" : "e.g. € 500"}
+                />
+              </div>
+
+              <button
+                onClick={async () => {
+                  if (!tempSettings.income || !tempSettings.savingsValue) return
+                  try {
+                    await updateUserSettings(user.uid, tempSettings)
+                    setShowSettingsModal(false)
+                    // Refresh stats
+                    calculateStats(transactions, tempSettings)
+                  } catch (error) {
+                    console.error("Failed to save settings", error)
+                  }
+                }}
+                className="w-full bg-ink text-paper py-2 rounded-md font-medium hover:opacity-70 transition-colors mt-2"
+
+              >
+                Save & Calculate
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 md:h-[calc(100vh-280px)] md:min-h-[300px]">
         {/* Visual Breakdown */}

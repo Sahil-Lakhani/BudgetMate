@@ -158,23 +158,23 @@ export default function AddTransaction() {
 					<CardContent className="p-6 space-y-6">
 						{/* Basic Information */}
 						<div className="space-y-4">
-							<h3 className="text-sm font-medium text-news uppercase tracking-wider">Transaction Details</h3>
+							<h3 className="text-sm font-sans font-medium text-news uppercase tracking-wider">Transaction Details</h3>
 
-							<div className="space-y-2">
-								<label className="text-sm font-medium text-ink">
-									Merchant Name <span className="text-red-500">*</span>
-								</label>
-								<Input
-									name="merchant"
-									value={formData.merchant}
-									onChange={handleInputChange}
-									placeholder="e.g., Walmart, Starbucks"
-									className="rounded-[8px]"
-									required
-								/>
-							</div>
+							<div className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
+								<div className="space-y-2 col-span-2 lg:col-span-1">
+									<label className="text-sm font-medium text-ink">
+										Merchant Name <span className="text-red-500">*</span>
+									</label>
+									<Input
+										name="merchant"
+										value={formData.merchant}
+										onChange={handleInputChange}
+										placeholder="e.g., Walmart, Starbucks"
+										className="rounded-[8px]"
+										required
+									/>
+								</div>
 
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 								<div className="space-y-2">
 									<label className="text-sm font-medium text-ink">
 										Date <span className="text-red-500">*</span>
@@ -184,13 +184,13 @@ export default function AddTransaction() {
 										name="date"
 										value={formData.date}
 										onChange={handleInputChange}
-										className="rounded-[8px]"
+										className="rounded-[8px] [color-scheme:light] dark:[color-scheme:dark]"
 										required
 									/>
 								</div>
 
 								<div className="space-y-2">
-									<label className="text-sm font-medium text-ink">Location (Optional)</label>
+									<label className="text-sm font-medium text-ink">Location</label>
 									<Input
 										name="location"
 										value={formData.location}
@@ -203,9 +203,9 @@ export default function AddTransaction() {
 						</div>
 
 						{/* Line Items */}
-						<div className="space-y-4 border-t border-border pt-6">
+						<div className="border-t border-border pt-4">
 							<div className="flex items-center justify-between">
-								<h3 className="text-sm font-medium text-news uppercase tracking-wider">Line Items</h3>
+								<h3 className="text-sm font-sans font-medium text-news uppercase tracking-wider">Line Items</h3>
 								<Button
 									type="button"
 									variant="secondary"
@@ -236,7 +236,7 @@ export default function AddTransaction() {
 											)}
 										</div>
 
-										<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+										<div className="grid grid-cols-2 gap-3">
 											<div className="space-y-2">
 												<label className="text-xs font-medium text-news">Item Name</label>
 												<Input
@@ -252,10 +252,10 @@ export default function AddTransaction() {
 												<select
 													value={item.category}
 													onChange={(e) => handleLineItemChange(index, "category", e.target.value)}
-													className="flex h-10 w-full border border-border bg-transparent text-ink px-3 py-2 text-sm rounded-[8px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2"
+													className="flex h-10 w-full border border-border bg-card text-ink px-3 py-2 text-sm rounded-[8px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2"
 												>
 													{CATEGORIES.map(cat => (
-														<option key={cat} value={cat}>{cat}</option>
+														<option key={cat} value={cat} className="bg-card text-ink">{cat}</option>
 													))}
 												</select>
 											</div>

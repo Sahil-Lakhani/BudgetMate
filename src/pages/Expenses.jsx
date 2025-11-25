@@ -1,8 +1,13 @@
+// TODO:  Add a new layout for bigger screen where transaction on one side and if user clicks it sould show in the side panel of the transaciton screen on right side so that transaction on left side and details on right side without changing the above layout on bigger screen
+
+
+// todo: add filter button on the side of the search bar to show option for date price.
+
 import { useState, useEffect } from "react"
 import { Card, CardContentTransaction, CardHeader, CardTitle } from "../components/Card"
 import { Input } from "../components/Input"
 import { Badge } from "../components/Badge"
-import { Search, Filter, ChevronRight, ShoppingBasket, Shirt, Smartphone, Coffee, Utensils, Car, Home, Zap, Tag } from "lucide-react"
+import { Search, Filter, ChevronRight, ShoppingBasket, Shirt, Smartphone, Coffee, Utensils, Car, Home, Zap, Tag, Plus } from "lucide-react"
 import { Button } from "../components/Button"
 import { useAuth } from "../context/AuthContext"
 import { getUserTransactions } from "../lib/firestore"
@@ -100,14 +105,24 @@ export default function Expenses() {
       </div>
 
       <div className="flex flex-col md:flex-row gap-4 items-end md:items-center justify-between">
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-news" />
-          <Input
-            className="pl-10 rounded-[8px]"
-            placeholder="Search merchant or category..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="flex gap-2 w-full md:w-auto">
+          <div className="relative flex-1 md:w-96">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-news" />
+            <Input
+              className="pl-10 rounded-[8px]"
+              placeholder="Search merchant or category..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <Button
+            variant="primary"
+            className="rounded-[8px] whitespace-nowrap"
+            onClick={() => navigate("/expenses/add")}
+          >
+            <Plus className="h-4 w-4 md:mr-2" />
+            <span className="hidden md:inline">Add Transaction</span>
+          </Button>
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto">
           {categories.slice(0, 5).map(cat => ( // Limit to 5 categories for UI

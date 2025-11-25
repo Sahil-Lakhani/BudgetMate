@@ -47,15 +47,15 @@ export const saveTransaction = async (userId, transactionData) => {
 
   try {
     // Ensure user document exists (optional but good practice)
-    const userRef = doc(db, "users", userId)
-    await setDoc(userRef, { email: transactionData.email || "", lastUpdated: new Date().toISOString() }, { merge: true })
+    // const userRef = doc(db, "users", userId)
+    // await setDoc(userRef, { email: transactionData.email || "", lastUpdated: new Date().toISOString() }, { merge: true })
 
     // Add transaction to subcollection
     const transactionsRef = collection(db, "users", userId, "transactions")
     const docRef = await addDoc(transactionsRef, {
       ...transactionData,
       createdAt: new Date().toISOString(),
-      source: "scan"
+      source: transactionData.source || "scan"
     })
     
     return docRef.id

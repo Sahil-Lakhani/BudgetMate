@@ -1,10 +1,11 @@
 import { createContext, useContext, useState, useEffect } from "react"
 import { auth } from "../lib/firebase"
-import { 
-  signInWithPopup, 
-  GoogleAuthProvider, 
-  signOut, 
-  onAuthStateChanged 
+import { saveUser } from "../lib/firestore"
+import {
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut,
+  onAuthStateChanged
 } from "firebase/auth"
 
 const AuthContext = createContext()
@@ -24,7 +25,8 @@ export function AuthProvider({ children }) {
   const loginWithGoogle = async () => {
     const provider = new GoogleAuthProvider()
     try {
-      await signInWithPopup(auth, provider)
+      const result = await signInWithPopup(auth, provider)
+      await saveUser(result.user)
     } catch (error) {
       console.error("Error logging in with Google", error)
     }

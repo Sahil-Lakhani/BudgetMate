@@ -105,24 +105,14 @@ export default function Expenses() {
       </div>
 
       <div className="flex flex-col md:flex-row gap-4 items-end md:items-center justify-between">
-        <div className="flex gap-2 w-full md:w-auto">
-          <div className="relative flex-1 md:w-96">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-news" />
-            <Input
-              className="pl-10 rounded-[8px]"
-              placeholder="Search merchant or category..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <Button
-            variant="primary"
-            className="rounded-[8px] whitespace-nowrap"
-            onClick={() => navigate("/expenses/add")}
-          >
-            <Plus className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">Add Transaction</span>
-          </Button>
+        <div className="relative w-full md:w-96">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-news" />
+          <Input
+            className="pl-10 rounded-[8px]"
+            placeholder="Search merchant or category..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto">
           {categories.slice(0, 5).map(cat => ( // Limit to 5 categories for UI
@@ -139,15 +129,25 @@ export default function Expenses() {
         </div>
       </div>
 
-      {/* Monthly Total */}
-      <div className="bg-card p-3 rounded-lg border border-border flex justify-between items-center shadow-sm">
-        <div>
-          <p className="text-sm text-news font-medium">Total Expenses</p>
-          <p className="text-xs text-news/60">{new Date(selectedMonth + "-01").toLocaleDateString('default', { month: 'long', year: 'numeric' })}</p>
+      {/* Monthly Total and Add Transaction */}
+      <div className="flex gap-3">
+        <div className="bg-card p-3 rounded-lg border border-border flex justify-between items-center shadow-sm flex-1">
+          <div>
+            <p className="text-sm text-news font-medium">Total Expenses</p>
+            <p className="text-xs text-news/60">{new Date(selectedMonth + "-01").toLocaleDateString('default', { month: 'long', year: 'numeric' })}</p>
+          </div>
+          <p className="text-2xl font-bold text-ink">
+            €{filteredTransactions.reduce((sum, t) => sum + parseFloat(t.total), 0).toFixed(2)}
+          </p>
         </div>
-        <p className="text-2xl font-bold text-ink">
-          €{filteredTransactions.reduce((sum, t) => sum + parseFloat(t.total), 0).toFixed(2)}
-        </p>
+        <Button
+          variant="primary"
+          className="rounded-lg whitespace-nowrap px-6 h-auto"
+          onClick={() => navigate("/expenses/add")}
+        >
+          <Plus className="h-6 w-12 md:mr-2" />
+          <span className="hidden md:inline">Add Transaction</span>
+        </Button>
       </div>
 
       <Card>

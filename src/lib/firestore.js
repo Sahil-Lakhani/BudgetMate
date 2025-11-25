@@ -27,6 +27,21 @@ export const getUserTransactions = async (userId) => {
   }
 }
 
+export const saveUser = async (user) => {
+  if (!user) return
+
+  try {
+    const userRef = doc(db, "users", user.uid)
+    await setDoc(userRef, { 
+      email: user.email,
+      lastUpdated: new Date().toISOString() 
+    }, { merge: true })
+  } catch (error) {
+    console.error("Error saving user:", error)
+    throw error
+  }
+}
+
 export const saveTransaction = async (userId, transactionData) => {
   if (!userId) throw new Error("User ID is required")
 

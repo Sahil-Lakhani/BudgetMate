@@ -99,7 +99,7 @@ export default function Scan() {
           totalPrice: parseFloat(item.price || 0) * parseInt(item.quantity || 1),
           category: item.category
         })),
-        email: user.email
+        // email: user.email
       }
 
       await saveTransaction(user.uid, transactionData)

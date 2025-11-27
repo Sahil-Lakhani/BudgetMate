@@ -218,9 +218,9 @@ export default function AddTransaction() {
 								</Button>
 							</div>
 
-							<div className="space-y-4">
+							<div className="pt-2">
 								{formData.lineItems.map((item, index) => (
-									<div key={index} className="bg-news-light/10 p-4 rounded-lg space-y-3">
+									<div key={index} className="space-y-3">
 										<div className="flex items-center justify-between">
 											<span className="text-sm font-medium text-ink">Item {index + 1}</span>
 											{formData.lineItems.length > 1 && (
@@ -237,7 +237,7 @@ export default function AddTransaction() {
 										</div>
 
 										<div className="grid grid-cols-2 gap-3">
-											<div className="space-y-2">
+											<div className="space-y-1">
 												<label className="text-xs font-medium text-news">Item Name</label>
 												<Input
 													value={item.name}
@@ -297,7 +297,7 @@ export default function AddTransaction() {
 						</div>
 
 						{/* Total */}
-						<div className="border-t border-border pt-6">
+						<div className="border-t border-border pt-2">
 							<div className="flex justify-between items-center bg-news-light/20 p-4 rounded-lg">
 								<span className="text-lg font-medium text-ink">Total Amount</span>
 								<span className="text-2xl font-bold text-ink">€{calculateTotal().toFixed(2)}</span>

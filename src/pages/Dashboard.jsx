@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import { useAuth } from "../context/AuthContext"
 import { getUserTransactions, getUserSettings, updateUserSettings } from "../lib/firestore"
 import { X } from "lucide-react"
+import BudgetSuggestions from "../components/Suggestions"
 
 const COLORS = {
   light: ["#8B5CF6", "#10B981", "#F59E0B", "#EF4444", "#3B82F6", "#EC4899", "#6366F1"],
@@ -357,6 +358,10 @@ export default function Dashboard() {
         </div>
       )}
 
+
+      {/* Smart Suggestions  */}
+
+      <BudgetSuggestions />
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 md:h-[calc(100vh-280px)] md:min-h-[300px]">
         {/* Visual Breakdown */}
         <Card className="col-span-4 flex flex-col">

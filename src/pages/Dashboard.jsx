@@ -243,7 +243,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="p-4">
+        {/* <Card className="p-4">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0 mb-2 border-0">
             <CardTitle className="text-sm font-medium font-sans text-news">
               Yearly Total
@@ -254,10 +254,10 @@ export default function Dashboard() {
             <div className="text-2xl font-bold font-sans text-ink">€{stats.yearlyTotal.toFixed(2)}</div>
             <p className="text-xs text-news mt-1">Year to date</p>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Row 3: Spendable Amount */}
-        <Card className="p-4">
+        {/* <Card className="p-4">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0 mb-2 border-0">
             <CardTitle className="text-sm font-medium font-sans text-news">
               Spendable Budget
@@ -268,7 +268,7 @@ export default function Dashboard() {
             <div className="text-2xl font-bold font-sans text-ink">€{stats.spendableAmount.toFixed(2)}</div>
             <p className="text-xs text-news mt-1">Income minus savings</p>
           </CardContent>
-        </Card>
+        </Card> */}
 
         <Card className="p-4">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0 mb-2 border-0">

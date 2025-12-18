@@ -22,7 +22,7 @@ export async function analyzeReceipt(imageFile) {
   "date": "transaction date (YYYY-MM-DD format)",
   "items": [
     {
-      "name": "item name",
+      "name": "item name (translate to English ONLY if it is a real, concrete noun like fruits, vegetables, food items, or branded products; if the name is a generic category or department label, keep it as a generic English description)",
       "unit_price": "item unit price (as a number)",
 	  "price": "item total price (as a number)",
       "quantity": "quantity (as a number, default 1)",
@@ -36,6 +36,7 @@ Rules:
 - Date should be in YYYY-MM-DD format, IMPORTANT or use today's date if not found in the image receipt
 - Categorize each item appropriately ("groceries","dining","transport","clothing","household","health","entertainment", "subscription","other","electronics")
 - If category is unclear, use "Other"
+- Translate item names to English ONLY if they are real, concrete nouns (e.g., fruits, vegetables, food items, branded products); do NOT invent specific product names for generic department labels
 - Return ONLY valid JSON, no markdown, no code blocks, no explanations
 - All prices should be numbers (not strings with currency symbols)`;
 

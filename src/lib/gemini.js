@@ -55,7 +55,7 @@ Rules:
     
     // Clean up markdown code blocks if present
 	  const jsonString = text.replace(/```json\n|\n```/g, "").trim();
-	  console.log(jsonString);
+	  // console.log(jsonString);
     
     return JSON.parse(jsonString);
   } catch (error) {
@@ -113,7 +113,7 @@ ${JSON.stringify(transactions)}
     
     // Clean up markdown code blocks if present
     const jsonString = text.replace(/```json\n|\n```/g, "").trim();
-    console.log(jsonString);
+    // console.log(jsonString);
     
     return JSON.parse(jsonString);
   } catch (error) {

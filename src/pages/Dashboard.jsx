@@ -89,11 +89,6 @@ export default function Dashboard() {
       }
 
       // Category Totals
-      // Use main category or infer from line items if needed. 
-      // Assuming 'category' field exists on transaction or we aggregate line items.
-      // The user example shows 'lineItems' have categories. 
-      // Let's aggregate from line items if available, or fallback to a transaction level category if we add one later.
-      // For now, let's assume we iterate line items for categories.
       if (t.lineItems && Array.isArray(t.lineItems)) {
         t.lineItems.forEach(item => {
           const itemTotal = parseFloat(item.totalPrice || 0)
@@ -361,9 +356,9 @@ export default function Dashboard() {
       {/* Insights Section */}
       <Insights transactions={transactions} />
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 md:h-[calc(100vh-280px)] md:min-h-[300px]">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-7 md:h-[calc(100vh-280px)] md:min-h-[300px]">
         {/* Visual Breakdown */}
-        <Card className="col-span-4 flex flex-col">
+        <Card className="col-span-1 lg:col-span-4 flex flex-col">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Spending Breakdown</CardTitle>
           </CardHeader>
@@ -417,14 +412,14 @@ export default function Dashboard() {
         </Card>
 
         {/* Recent Activity */}
-        <Card className="col-span-3 flex flex-col">
+        <Card className="col-span-1 lg:col-span-3 flex flex-col">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Recent Activity</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 overflow-auto pr-6">
             <div className="space-y-3">
               {transactions.length > 0 ? (
-                transactions.slice(0, 10).map((transaction) => (
+                transactions.slice(0, 7).map((transaction) => (
                   <div key={transaction.id} className="flex items-center justify-between border-b border-border pb-2 last:border-0 last:pb-0">
                     <div className="space-y-0.5">
                       <p className="text-sm font-medium leading-none text-ink">{transaction.merchant}</p>

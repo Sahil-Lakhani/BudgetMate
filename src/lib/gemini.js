@@ -63,3 +63,61 @@ Rules:
     throw error;
   }
 }
+
+export async function generateMonthlyInsights(transactions) {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const prompt = `You are a personal finance assistant.
+
+Analyze the following previous month transaction data and generate exactly 3 to 4 highly specific, numerical, and actionable money-saving suggestions.
+
+Each suggestion MUST:
+- Be strictly based on the provided data (no assumptions)
+- Include real numbers from the data (prices, totals, differences, counts)
+- Include a clear action the user can take
+- Include a realistic estimated saving amount
+- Focus on:
+  • Price comparisons (same product across stores)
+  • Repeatedly bought items
+  • Category overspending
+  • Pfand (deposit) recovery
+  • Drink/snack cutbacks
+
+DO NOT:
+- Give generic advice
+- Repeat the same type of suggestion twice
+- Mention budgeting theory
+- Mention percentages without real euro amounts
+
+Return the result in the following JSON format:
+
+{
+  "suggestions": [
+    {
+      "title": "Short title (max 6 words)",
+      "insight": "What exactly happened based on the data make it short and to the point",
+      "action": "What the user should do",
+      "estimated_saving_per_month": "number in euros"
+    }
+  ]
+}
+
+Here is the previous month transaction data:
+${JSON.stringify(transactions)}
+`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    // Clean up markdown code blocks if present
+    const jsonString = text.replace(/```json\n|\n```/g, "").trim();
+    console.log(jsonString);
+    
+    return JSON.parse(jsonString);
+  } catch (error) {
+    console.error("Error generating monthly insights:", error);
+    throw error;
+  }
+}

@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../components/Card"
+import Insights from "../components/Insights"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
 import { ArrowUpRight, ArrowDownRight, DollarSign, TrendingUp, Calendar } from "lucide-react"
 import { useTheme } from "../context/ThemeContext"
@@ -356,6 +357,9 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Insights Section */}
+      <Insights transactions={transactions} />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 md:h-[calc(100vh-280px)] md:min-h-[300px]">
         {/* Visual Breakdown */}

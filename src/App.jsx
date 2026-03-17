@@ -14,11 +14,13 @@ import { ProtectedRoute } from "./components/ProtectedRoute"
 
 import { AuthProvider } from "./context/AuthContext"
 import { ThemeProvider } from "./context/ThemeContext"
+import { CurrencyProvider } from "./context/CurrencyContext"
 
 function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
+        <CurrencyProvider>
         <Router>
           <Routes>
             <Route path="/login" element={<Login />} />
@@ -42,6 +44,7 @@ function App() {
             />
           </Routes>
         </Router>
+        </CurrencyProvider>
       </AuthProvider>
     </ThemeProvider>
   )

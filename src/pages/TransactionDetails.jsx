@@ -5,12 +5,14 @@ import { Button } from "../components/Button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/Card"
 import { Badge } from "../components/Badge"
 import { useAuth } from "../context/AuthContext"
+import { useCurrency } from "../context/CurrencyContext"
 import { getTransaction, deleteTransaction } from "../lib/firestore"
 
 export default function TransactionDetails() {
 	const { id } = useParams()
 	const navigate = useNavigate()
 	const { user } = useAuth()
+	const { formatCurrency } = useCurrency()
 	const [transaction, setTransaction] = useState(null)
 	const [loading, setLoading] = useState(true)
 
@@ -106,12 +108,12 @@ export default function TransactionDetails() {
 								</div>
 							</div>
 							<div className=" items-center gap-2 text-news text-sm mt-1">
-								<div className="text-xl font-bold text-ink md:hidden">€{parseFloat(transaction.total).toFixed(2)}</div>
+								<div className="text-xl font-bold text-ink md:hidden">{formatCurrency(parseFloat(transaction.total))}</div>
 								<p className="font-bold text-news md:hidden text-right">Total</p>
 							</div>
 						</div>
 						<div className="text-left md:text-right hidden md:block">
-							<p className="text-2xl font-bold text-ink">€{parseFloat(transaction.total).toFixed(2)}</p>
+							<p className="text-2xl font-bold text-ink">{formatCurrency(parseFloat(transaction.total))}</p>
 							<p className="font-bold text-news">Total</p>
 						</div>
 					</div>
@@ -126,7 +128,7 @@ export default function TransactionDetails() {
 										<p className="font-medium text-ink">{item.name}</p>
 										<p className="text-xs text-news">{item.category} • Qty: {item.quantity}</p>
 									</div>
-									<p className="font-medium text-ink">€{parseFloat(item.totalPrice || item.price).toFixed(2)}</p>
+									<p className="font-medium text-ink">{formatCurrency(parseFloat(item.totalPrice || item.price))}</p>
 								</div>
 							))}
 						</div>

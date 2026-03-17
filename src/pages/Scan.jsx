@@ -9,10 +9,14 @@ import { analyzeReceipt } from "../lib/gemini"
 
 import { saveTransaction } from "../lib/firestore"
 import { useAuth } from "../context/AuthContext"
+import { useCurrency } from "../context/CurrencyContext"
+import { getCurrencySymbol } from "../lib/currency"
 
 export default function Scan() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { currency } = useCurrency()
+  const currencySymbol = getCurrencySymbol(currency)
   const [status, setStatus] = useState("idle") // idle, scanning, review, success
   const [file, setFile] = useState(null)
   const [extractedData, setExtractedData] = useState({
@@ -335,7 +339,7 @@ export default function Scan() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Total Amount</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold">€</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold">{currencySymbol}</span>
                   <Input
                     className="pl-6 font-bold"
                     value={extractedData.total}

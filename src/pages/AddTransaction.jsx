@@ -5,6 +5,8 @@ import { Button } from "../components/Button"
 import { Card, CardContent } from "../components/Card"
 import { Input } from "../components/Input"
 import { useAuth } from "../context/AuthContext"
+import { useCurrency } from "../context/CurrencyContext"
+import { getCurrencySymbol } from "../lib/currency"
 import { saveTransaction } from "../lib/firestore"
 
 const CATEGORIES = [
@@ -22,6 +24,8 @@ const CATEGORIES = [
 export default function AddTransaction() {
 	const navigate = useNavigate()
 	const { user } = useAuth()
+	const { currency } = useCurrency()
+	const currencySymbol = getCurrencySymbol(currency)
 	const [saving, setSaving] = useState(false)
 
 	// Get today's date in YYYY-MM-DD format
@@ -273,7 +277,7 @@ export default function AddTransaction() {
 											</div>
 
 											<div className="space-y-2">
-												<label className="text-xs font-medium text-news">Price (€)</label>
+												<label className="text-xs font-medium text-news">Price ({currencySymbol})</label>
 												<Input
 													type="number"
 													min="0"
@@ -288,7 +292,7 @@ export default function AddTransaction() {
 										<div className="text-right">
 											<span className="text-sm text-news">Item Total: </span>
 											<span className="text-sm font-bold text-ink">
-												€{((parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0)).toFixed(2)}
+												{currencySymbol}{((parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0)).toFixed(2)}
 											</span>
 										</div>
 									</div>
@@ -300,7 +304,7 @@ export default function AddTransaction() {
 						<div className="border-t border-border pt-2">
 							<div className="flex justify-between items-center bg-news-light/20 p-4 rounded-lg">
 								<span className="text-lg font-medium text-ink">Total Amount</span>
-								<span className="text-2xl font-bold text-ink">€{calculateTotal().toFixed(2)}</span>
+								<span className="text-2xl font-bold text-ink">{currencySymbol}{calculateTotal().toFixed(2)}</span>
 							</div>
 						</div>
 

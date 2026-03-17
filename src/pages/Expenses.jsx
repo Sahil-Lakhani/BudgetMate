@@ -10,11 +10,13 @@ import { Badge } from "../components/Badge"
 import { Search, Filter, ChevronRight, ShoppingBasket, Shirt, Smartphone, Coffee, Utensils, Car, Home, Zap, Tag, Plus } from "lucide-react"
 import { Button } from "../components/Button"
 import { useAuth } from "../context/AuthContext"
+import { useCurrency } from "../context/CurrencyContext"
 import { getUserTransactions } from "../lib/firestore"
 import { useNavigate } from "react-router-dom"
 
 export default function Expenses() {
   const { user } = useAuth()
+  const { formatCurrency } = useCurrency()
   const navigate = useNavigate()
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
@@ -137,7 +139,7 @@ export default function Expenses() {
             <p className="text-xs text-news/60">{new Date(selectedMonth + "-01").toLocaleDateString('default', { month: 'long', year: 'numeric' })}</p>
           </div>
           <p className="text-2xl font-bold text-ink">
-            €{filteredTransactions.reduce((sum, t) => sum + parseFloat(t.total), 0).toFixed(2)}
+            {formatCurrency(filteredTransactions.reduce((sum, t) => sum + parseFloat(t.total), 0))}
           </p>
         </div>
         <Button
@@ -173,7 +175,7 @@ export default function Expenses() {
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="font-bold text-lg text-ink">- €{parseFloat(transaction.total).toFixed(2)}</span>
+                      <span className="font-bold text-lg text-ink">- {formatCurrency(parseFloat(transaction.total))}</span>
                       <ChevronRight className="h-4 w-4 text-ink" />
                     </div>
                   </div>

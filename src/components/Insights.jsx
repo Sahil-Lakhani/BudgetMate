@@ -1,17 +1,21 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from './Card';
 import { Lightbulb, TrendingUp, TrendingDown, ShoppingBag, Sparkles, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
+// import { useTheme } from '../context/ThemeContext';
+import { useCurrency } from '../context/CurrencyContext';
+import { formatCurrency } from '../lib/currency';
 import { generateMonthlyInsights } from '../lib/gemini';
 
 export default function Insights({ transactions }) {
-	const { theme } = useTheme();
+	// const { theme } = useTheme();
+	const { currency } = useCurrency();
 	const [aiInsights, setAiInsights] = useState([]);
 	const [loadingAI, setLoadingAI] = useState(false);
 	const [currentSlide, setCurrentSlide] = useState(0);
 
 	const ruleBasedInsights = useMemo(() => {
 		if (!transactions || transactions.length === 0) return [];
+		const fc = (amount) => formatCurrency(amount, currency);
 
 		const tips = [];
 		const now = new Date();
@@ -66,7 +70,7 @@ export default function Insights({ transactions }) {
 					tips.push({
 						type: 'saving',
 						title: 'Smart Shopper Tip',
-						message: `You paid €${expensive.unitPrice.toFixed(2)} for ${name} at ${expensive.merchant}, but it was only €${cheapest.unitPrice.toFixed(2)} at ${cheapest.merchant}.`,
+						message: `You paid ${fc(expensive.unitPrice)} for ${name} at ${expensive.merchant}, but it was only ${fc(cheapest.unitPrice)} at ${cheapest.merchant}.`,
 						icon: <Lightbulb className="h-5 w-5 text-yellow-500" />,
 						priority: diff,
 						isAi: false
@@ -101,7 +105,7 @@ export default function Insights({ transactions }) {
 				tips.push({
 					type: 'trend_up',
 					title: 'Spending Alert',
-					message: `You've spent €${diff.toFixed(2)} (${percent}%) more this month compared to last month.`,
+					message: `You've spent ${fc(diff)} (${percent}%) more this month compared to last month.`,
 					icon: <TrendingUp className="h-5 w-5 text-red-500" />,
 					priority: 100,
 					isAi: false
@@ -110,7 +114,7 @@ export default function Insights({ transactions }) {
 				tips.push({
 					type: 'trend_down',
 					title: 'Great Job!',
-					message: `You've saved €${Math.abs(diff).toFixed(2)} (${Math.abs(percent)}%) compared to last month!`,
+					message: `You've saved ${fc(Math.abs(diff))} (${Math.abs(percent)}%) compared to last month!`,
 					icon: <TrendingDown className="h-5 w-5 text-green-500" />,
 					priority: 90,
 					isAi: false
@@ -156,7 +160,7 @@ export default function Insights({ transactions }) {
 		});
 
 		return uniqueTips.slice(0, 3);
-	}, [transactions]);
+	}, [transactions, currency]);
 
 
 	// AI Insights Logic
@@ -231,7 +235,7 @@ export default function Insights({ transactions }) {
 
 		const interval = setInterval(() => {
 			setCurrentSlide((prev) => (prev + 1) % allSlides.length);
-		}, 4000); // 4 seconds
+		}, 8000); // 8 seconds
 
 		return () => clearInterval(interval);
 	}, [allSlides.length]);
@@ -281,7 +285,7 @@ export default function Insights({ transactions }) {
 									<div className="flex flex-wrap gap-2">
 										<span className="text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2.5 py-1 rounded-md font-medium flex items-center gap-1">
 											<TrendingDown className="h-3 w-3" />
-											Save ~€{currentItem.estimated_saving_per_month}
+											Save ~{formatCurrency(currentItem.estimated_saving_per_month, currency)}
 										</span>
 										<span className="text-xs border border-neutral-200 text-ink dark:border-neutral-700 dark:text-neutral-300 px-2.5 py-1 rounded-md bg-neutral-50 dark:bg-neutral-800">
 											Action: {currentItem.action}

@@ -89,7 +89,7 @@ export default function Expenses() {
       </div> */}
 
       {/* Monthly Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+      <div className="flex gap-2 overflow-x-auto pb-2 month-scroll">
         {availableMonths.map(month => {
           const date = new Date(month + "-01")
           const label = date.toLocaleDateString('default', { month: 'long', year: 'numeric' })

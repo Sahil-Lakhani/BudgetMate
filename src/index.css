@@ -14,6 +14,52 @@
   --font-sans: "Inter", sans-serif;
 }
 
+/* Global page scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-news);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+/* Thin styled scrollbar for horizontal month tabs */
+.month-scroll::-webkit-scrollbar {
+  height: 3px;
+}
+.month-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.month-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 99px;
+}
+.month-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-news);
+}
+
+/* Hide-scrollbar utility (used on category filter row) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 @layer base {
   :root {
     --color-paper: #F4F4F5; /* Zinc 100 */

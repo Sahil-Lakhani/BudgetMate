@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext"
 import { useCurrency } from "../context/CurrencyContext"
 import { getCurrencySymbol } from "../lib/currency"
 import { saveTransaction } from "../lib/firestore"
+import { Select } from "../components/Select"
 
 const CATEGORIES = [
 	"Groceries",
@@ -134,7 +135,7 @@ export default function AddTransaction() {
 				date: formData.date,
 				location: formData.location.trim() || "",
 				lineItems: validLineItems,
-				total: calculateTotal().toFixed(2),
+				total: calculateTotal(),
 				source: "manual"
 			}
 
@@ -142,7 +143,7 @@ export default function AddTransaction() {
 			navigate("/expenses")
 		} catch (error) {
 			console.error("Error saving transaction:", error)
-			alert("Failed to save transaction. Please try again.")
+			alert(`Failed to save transaction: ${error.message}`)
 		} finally {
 			setSaving(false)
 		}
@@ -253,15 +254,11 @@ export default function AddTransaction() {
 
 											<div className="space-y-2">
 												<label className="text-xs font-medium text-news">Category</label>
-												<select
+												<Select
 													value={item.category}
 													onChange={(e) => handleLineItemChange(index, "category", e.target.value)}
-													className="flex h-10 w-full border border-border bg-card text-ink px-3 py-2 text-sm rounded-[8px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2"
-												>
-													{CATEGORIES.map(cat => (
-														<option key={cat} value={cat} className="bg-card text-ink">{cat}</option>
-													))}
-												</select>
+													options={CATEGORIES.map(cat => ({ value: cat, label: cat }))}
+												/>
 											</div>
 
 											<div className="space-y-2">

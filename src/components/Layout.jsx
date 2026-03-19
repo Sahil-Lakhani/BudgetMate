@@ -56,8 +56,10 @@ export function Layout({ children }) {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors hover:bg-news-light/50 border border-transparent rounded-md",
-                  isActive ? "bg-ink text-paper border-ink" : "text-ink"
+                  "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-md transition-all duration-150",
+                  isActive
+                    ? "bg-ink text-paper"
+                    : "text-ink/60 hover:text-ink hover:bg-ink/8"
                 )}
                 onClick={() => setIsMobileMenuOpen(false)}
               >

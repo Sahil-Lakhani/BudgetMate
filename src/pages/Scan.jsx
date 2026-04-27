@@ -11,8 +11,10 @@ import { saveTransaction } from "../lib/firestore"
 import { useAuth } from "../context/AuthContext"
 import { useCurrency } from "../context/CurrencyContext"
 import { getCurrencySymbol } from "../lib/currency"
+import { usePageTitle } from "../lib/usePageTitle"
 
 export default function Scan() {
+  usePageTitle("Scan Receipt")
   const navigate = useNavigate()
   const { user } = useAuth()
   const { currency } = useCurrency()
@@ -28,23 +30,33 @@ export default function Scan() {
   })
 
   const [previewUrl, setPreviewUrl] = useState(null)
+  const [scanError, setScanError] = useState("")
+  const [groupId, setGroupId] = useState(null)
   const location = useLocation()
 
   useEffect(() => {
     if (location.state?.file) {
       const file = location.state.file
+      const gId = location.state.groupId || null
       setFile(file)
       setPreviewUrl(URL.createObjectURL(file))
       setStatus("preview")
-      // Clear state so it doesn't re-trigger on refresh (though location state usually persists)
-      // We can replace the history entry to clear it
+      if (gId) setGroupId(gId)
       navigate(location.pathname, { replace: true, state: {} })
     }
   }, [location.state, navigate])
 
+  // Revoke object URL when it changes or component unmounts to prevent memory leaks
+  useEffect(() => {
+    const url = previewUrl
+    if (!url) return
+    return () => URL.revokeObjectURL(url)
+  }, [previewUrl])
+
   const handleFileUpload = (e) => {
     const selectedFile = e.target.files[0]
     if (selectedFile) {
+      setScanError("")
       setFile(selectedFile)
       setPreviewUrl(URL.createObjectURL(selectedFile))
       setStatus("preview")
@@ -71,8 +83,8 @@ export default function Scan() {
         setStatus("review")
       } catch (error) {
         console.error("Scan failed:", error)
-        setStatus("preview") // Go back to preview on error
-        // Could add error toast here
+        setScanError("Failed to analyze receipt. Please try again or check the image quality.")
+        setStatus("preview")
       }
     }
   }
@@ -106,6 +118,18 @@ export default function Scan() {
         // email: user.email
       }
 
+      if (groupId) {
+        navigate(`/groups/${groupId}/split/new/screen`, {
+          state: {
+            merchant: extractedData.merchant,
+            totalAmount: parseFloat(extractedData.total) || 0,
+            date: extractedData.date || new Date().toISOString().slice(0, 10),
+            fromScan: true
+          }
+        })
+        return
+      }
+
       await saveTransaction(user.uid, transactionData)
 
       setStatus("success")
@@ -123,6 +147,7 @@ export default function Scan() {
     setStatus("idle")
     setFile(null)
     setPreviewUrl(null)
+    setScanError("")
     setExtractedData({ merchant: "", date: "", total: "", items: [] })
   }
 
@@ -184,6 +209,9 @@ export default function Scan() {
                 />
               )}
             </div>
+            {scanError && (
+              <p className="text-sm text-red-500 text-center">{scanError}</p>
+            )}
             <div className="flex gap-4 justify-center">
               <Button onClick={handleAnalyze} className="w-full max-w-xs">
                 <Check className="mr-2 h-4 w-4" />

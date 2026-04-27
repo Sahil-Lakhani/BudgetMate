@@ -1,10 +1,11 @@
 import { Link, useLocation, useNavigate } from "react-router-dom"
-import { LayoutDashboard, Receipt, ScanLine, PieChart, Settings, Menu, Sun, Moon, LogOut } from "lucide-react"
-import { useState } from "react"
+import { LayoutDashboard, Receipt, ScanLine, PieChart, Settings, Menu, Sun, Moon, LogOut, Users } from "lucide-react"
+import { useState, useEffect } from "react"
 import { cn } from "../lib/utils"
 import { Button } from "./Button"
 import { useTheme } from "../context/ThemeContext"
 import { useAuth } from "../context/AuthContext"
+import { getUserNotifications } from "../lib/firestore"
 
 export function Layout({ children }) {
   const location = useLocation()
@@ -13,10 +14,20 @@ export function Layout({ children }) {
   const { theme, toggleTheme } = useTheme()
   const { user, logout } = useAuth()
 
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    if (!user) return
+    getUserNotifications(user.uid)
+      .then((notifs) => setUnreadCount(notifs.length))
+      .catch(() => {})
+  }, [user])
+
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/" },
     { icon: Receipt, label: "Expenses", path: "/expenses" },
     { icon: ScanLine, label: "Scan", path: "/scan" },
+    { icon: Users, label: "Groups", path: "/groups", badge: unreadCount },
     { icon: PieChart, label: "Analytics", path: "/analytics" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ]
@@ -27,7 +38,7 @@ export function Layout({ children }) {
       <div className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card sticky top-0 z-50">
         <h1 className="text-xl font-sans font-bold text-ink">Budget Daily</h1>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={toggleTheme}>
+          <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
             {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
           <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
@@ -65,6 +76,11 @@ export function Layout({ children }) {
               >
                 <Icon className="h-5 w-5" />
                 {item.label}
+                {item.badge > 0 && (
+                  <span className="ml-auto bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                    {item.badge > 9 ? "9+" : item.badge}
+                  </span>
+                )}
               </Link>
             )
           })}
@@ -82,7 +98,7 @@ export function Layout({ children }) {
               </div>
             </div>
           )}
-          <Button variant="outline" className="w-full justify-start gap-2 hidden md:flex" onClick={toggleTheme}>
+          <Button variant="outline" className="w-full justify-start gap-2 hidden md:flex" onClick={toggleTheme} aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
           </Button>

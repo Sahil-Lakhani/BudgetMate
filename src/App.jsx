@@ -9,6 +9,12 @@ import AddTransaction from "./pages/AddTransaction"
 import Scan from "./pages/Scan"
 import Analytics from "./pages/Analytics"
 import Settings from "./pages/Settings"
+import Groups from "./pages/Groups"
+import CreateGroup from "./pages/CreateGroup"
+import GroupDetail from "./pages/GroupDetail"
+import AddSplit from "./pages/AddSplit"
+import SplitScreen from "./pages/SplitScreen"
+import SplitDetail from "./pages/SplitDetail"
 import Login from "./pages/Login"
 import { ProtectedRoute } from "./components/ProtectedRoute"
 
@@ -35,6 +41,12 @@ function App() {
                       <Route path="/expenses/add" element={<AddTransaction />} />
                       <Route path="/expenses/:id" element={<TransactionDetails />} />
                       <Route path="/scan" element={<Scan />} />
+                      <Route path="/groups" element={<Groups />} />
+                      <Route path="/groups/new" element={<CreateGroup />} />
+                      <Route path="/groups/:groupId" element={<GroupDetail />} />
+                      <Route path="/groups/:groupId/split/new" element={<AddSplit />} />
+                      <Route path="/groups/:groupId/split/:splitId/screen" element={<SplitScreen />} />
+                      <Route path="/groups/:groupId/split/:splitId" element={<SplitDetail />} />
                       <Route path="/analytics" element={<Analytics />} />
                       <Route path="/settings" element={<Settings />} />
                     </Routes>

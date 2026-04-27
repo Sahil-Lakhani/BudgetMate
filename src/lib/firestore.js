@@ -146,44 +146,64 @@ export const updateUserSettings = async (userId, settings) => {
 // ─── Groups ──────────────────────────────────────────────────────────────────
 
 export const createGroup = async (userId, { name, members }) => {
-  const memberIds = members.map((m) => m.userId)
-  if (!memberIds.includes(userId)) memberIds.push(userId)
+  try {
+    const memberIds = members.map((m) => m.userId)
+    if (!memberIds.includes(userId)) memberIds.push(userId)
 
-  const groupData = {
-    name,
-    createdBy: userId,
-    memberIds,
-    members,
-    createdAt: new Date().toISOString()
+    const groupData = {
+      name,
+      createdBy: userId,
+      memberIds,
+      members,
+      createdAt: new Date().toISOString()
+    }
+
+    const ref = await addDoc(collection(db, "groups"), groupData)
+    return ref.id
+  } catch (error) {
+    console.error("Error creating group:", error)
+    throw error
   }
-
-  const ref = await addDoc(collection(db, "groups"), groupData)
-  return ref.id
 }
 
 export const getUserGroups = async (userId) => {
   if (!userId) return []
-  const q = query(collection(db, "groups"), where("memberIds", "array-contains", userId))
-  const snap = await getDocs(q)
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+  try {
+    const q = query(collection(db, "groups"), where("memberIds", "array-contains", userId))
+    const snap = await getDocs(q)
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+  } catch (error) {
+    console.error("Error fetching user groups:", error)
+    throw error
+  }
 }
 
 export const getGroup = async (groupId) => {
-  const snap = await getDoc(doc(db, "groups", groupId))
-  if (!snap.exists()) return null
-  return { id: snap.id, ...snap.data() }
+  try {
+    const snap = await getDoc(doc(db, "groups", groupId))
+    if (!snap.exists()) return null
+    return { id: snap.id, ...snap.data() }
+  } catch (error) {
+    console.error("Error fetching group:", error)
+    throw error
+  }
 }
 
 export const addMemberToGroup = async (groupId, member) => {
-  const groupRef = doc(db, "groups", groupId)
-  const snap = await getDoc(groupRef)
-  if (!snap.exists()) throw new Error("Group not found")
+  try {
+    const groupRef = doc(db, "groups", groupId)
+    const snap = await getDoc(groupRef)
+    if (!snap.exists()) throw new Error("Group not found")
 
-  const { members = [], memberIds = [] } = snap.data()
-  if (memberIds.includes(member.userId)) return
+    const { members = [], memberIds = [] } = snap.data()
+    if (memberIds.includes(member.userId)) return
 
-  await setDoc(groupRef, {
-    members: [...members, member],
-    memberIds: [...memberIds, member.userId]
-  }, { merge: true })
+    await setDoc(groupRef, {
+      members: [...members, member],
+      memberIds: [...memberIds, member.userId]
+    }, { merge: true })
+  } catch (error) {
+    console.error("Error adding member to group:", error)
+    throw error
+  }
 }

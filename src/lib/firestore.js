@@ -1,5 +1,7 @@
 import { db } from "./firebase"
-import { collection, getDocs, query, orderBy, addDoc, doc, setDoc, getDoc, deleteDoc } from "firebase/firestore"
+import { collection, getDocs, query, orderBy, addDoc, doc, setDoc, getDoc, deleteDoc, where, limit, onSnapshot } from "firebase/firestore"
+import { validateTransaction, validateUserSettings } from "./validation"
+import { checkRateLimit } from "./rateLimit"
 
 export const getUserTransactions = async (userId) => {
   if (!userId) return []
@@ -32,9 +34,11 @@ export const saveUser = async (user) => {
 
   try {
     const userRef = doc(db, "users", user.uid)
-    await setDoc(userRef, { 
+    await setDoc(userRef, {
       email: user.email,
-      lastUpdated: new Date().toISOString() 
+      displayName: user.displayName || "",
+      photoURL: user.photoURL || "",
+      lastUpdated: new Date().toISOString()
     }, { merge: true })
   } catch (error) {
     console.error("Error saving user:", error)
@@ -46,6 +50,12 @@ export const saveTransaction = async (userId, transactionData) => {
   if (!userId) throw new Error("User ID is required")
 
   try {
+    // Check rate limit
+    checkRateLimit('firestore-write');
+    
+    // Validate transaction data
+    const validatedData = validateTransaction(transactionData);
+
     // Ensure user document exists (optional but good practice)
     // const userRef = doc(db, "users", userId)
     // await setDoc(userRef, { email: transactionData.email || "", lastUpdated: new Date().toISOString() }, { merge: true })
@@ -53,9 +63,9 @@ export const saveTransaction = async (userId, transactionData) => {
     // Add transaction to subcollection
     const transactionsRef = collection(db, "users", userId, "transactions")
     const docRef = await addDoc(transactionsRef, {
-      ...transactionData,
+      ...validatedData,
       createdAt: new Date().toISOString(),
-      source: transactionData.source || "scan"
+      source: validatedData.source || "scan"
     })
     
     return docRef.id
@@ -115,8 +125,18 @@ export const updateUserSettings = async (userId, settings) => {
   if (!userId) throw new Error("User ID is required")
 
   try {
+    // Check rate limit
+    checkRateLimit('firestore-write');
+
+    // Read existing settings first to avoid overwriting unrelated fields
     const userRef = doc(db, "users", userId)
-    await setDoc(userRef, { settings }, { merge: true })
+    const existing = await getDoc(userRef)
+    const currentSettings = existing.exists() ? (existing.data().settings || {}) : {}
+
+    // Merge new settings on top of existing
+    const validatedSettings = validateUserSettings({ ...currentSettings, ...settings });
+
+    await setDoc(userRef, { settings: validatedSettings }, { merge: true })
   } catch (error) {
     console.error("Error updating user settings:", error)
     throw error

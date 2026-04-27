@@ -1,7 +1,6 @@
 import React, { useMemo, useEffect } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { shaderMaterial, useTrailTexture } from "@react-three/drei"
-import { useTheme } from "../context/ThemeContext"
 import * as THREE from "three"
 
 // Custom shader material
@@ -107,38 +106,18 @@ const DotMaterial = shaderMaterial(
   `
 )
 
+const DARK_COLORS = {
+	dotColor: "#FFFFFF",
+	bgColor: "#121212",
+	dotOpacity: 0.025,
+}
+
 function Scene() {
 	const size = useThree((s) => s.size)
 	const viewport = useThree((s) => s.viewport)
-	const { theme } = useTheme()
 
 	const rotation = 0
 	const gridSize = 100
-
-	const getThemeColors = () => {
-		switch (theme) {
-			case "dark":
-				return {
-					dotColor: "#FFFFFF",
-					bgColor: "#121212",
-					dotOpacity: 0.025,
-				}
-			case "light":
-				return {
-					dotColor: "#e1e1e1",
-					bgColor: "#F4F5F5",
-					dotOpacity: 0.15,
-				}
-			default:
-				return {
-					dotColor: "#FFFFFF",
-					bgColor: "#121212",
-					dotOpacity: 0.05,
-				}
-		}
-	}
-
-	const themeColors = getThemeColors()
 
 	const [trail, onMove] = useTrailTexture({
 		size: 512,
@@ -158,13 +137,13 @@ function Scene() {
 
 	useEffect(() => {
 		dotMaterial.uniforms.dotColor.value.setHex(
-			themeColors.dotColor.replace("#", "0x")
+			DARK_COLORS.dotColor.replace("#", "0x")
 		)
 		dotMaterial.uniforms.bgColor.value.setHex(
-			themeColors.bgColor.replace("#", "0x")
+			DARK_COLORS.bgColor.replace("#", "0x")
 		)
-		dotMaterial.uniforms.dotOpacity.value = themeColors.dotOpacity
-	}, [theme, dotMaterial, themeColors])
+		dotMaterial.uniforms.dotOpacity.value = DARK_COLORS.dotOpacity
+	}, [dotMaterial])
 
 	useFrame((state) => {
 		dotMaterial.uniforms.time.value = state.clock.elapsedTime
@@ -194,6 +173,7 @@ function Scene() {
 export function DotScreenShader() {
 	return (
 		<Canvas
+			style={{ background: "#121212" }}
 			gl={{
 				antialias: true,
 				powerPreference: "high-performance",

@@ -5,22 +5,22 @@ import { checkRateLimit } from "./rateLimit"
 
 export const getUserTransactions = async (userId) => {
   if (!userId) return []
-  
+
   try {
     const transactionsRef = collection(db, "users", userId, "transactions")
     // Order by date descending by default
     const q = query(transactionsRef) // We can add orderBy("date", "desc") if indexes are set up
-    
+
     const querySnapshot = await getDocs(q)
     const transactions = []
-    
+
     querySnapshot.forEach((doc) => {
       transactions.push({
         id: doc.id,
         ...doc.data()
-      })  
+      })
     })
-    
+
     // Sort manually to avoid index requirements for now
     return transactions.sort((a, b) => new Date(b.date) - new Date(a.date))
   } catch (error) {
@@ -52,7 +52,7 @@ export const saveTransaction = async (userId, transactionData) => {
   try {
     // Check rate limit
     checkRateLimit('firestore-write');
-    
+
     // Validate transaction data
     const validatedData = validateTransaction(transactionData);
 
@@ -67,7 +67,7 @@ export const saveTransaction = async (userId, transactionData) => {
       createdAt: new Date().toISOString(),
       source: validatedData.source || "scan"
     })
-    
+
     return docRef.id
   } catch (error) {
     console.error("Error saving transaction:", error)
@@ -106,11 +106,11 @@ export const deleteTransaction = async (userId, transactionId) => {
 
 export const getUserSettings = async (userId) => {
   if (!userId) return null
-  
+
   try {
     const userRef = doc(db, "users", userId)
     const docSnap = await getDoc(userRef)
-    
+
     if (docSnap.exists()) {
       return docSnap.data().settings || null
     }
@@ -297,7 +297,7 @@ export const searchUsersByName = async (name) => {
     const q = query(
       collection(db, "users"),
       where("displayName", ">=", name),
-      where("displayName", "<=", name + ""),
+      where("displayName", "<=", name + "￿"),
       limit(5)
     )
     const snap = await getDocs(q)

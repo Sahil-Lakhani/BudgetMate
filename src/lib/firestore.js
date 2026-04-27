@@ -276,3 +276,68 @@ export const settleSplit = async (splitId, userId) => {
     throw error
   }
 }
+
+// ─── User Search ─────────────────────────────────────────────────────────────
+
+export const searchUsersByEmail = async (email) => {
+  if (!email) return []
+  try {
+    const q = query(collection(db, "users"), where("email", "==", email), limit(5))
+    const snap = await getDocs(q)
+    return snap.docs.map((d) => ({ userId: d.id, ...d.data() }))
+  } catch (error) {
+    console.error("Error searching users by email:", error)
+    throw error
+  }
+}
+
+export const searchUsersByName = async (name) => {
+  if (!name) return []
+  try {
+    const q = query(
+      collection(db, "users"),
+      where("displayName", ">=", name),
+      where("displayName", "<=", name + ""),
+      limit(5)
+    )
+    const snap = await getDocs(q)
+    return snap.docs.map((d) => ({ userId: d.id, ...d.data() }))
+  } catch (error) {
+    console.error("Error searching users by name:", error)
+    throw error
+  }
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+export const createNotification = async (userId, notifData) => {
+  try {
+    const ref = collection(db, "users", userId, "notifications")
+    await addDoc(ref, { ...notifData, read: false, createdAt: new Date().toISOString() })
+  } catch (error) {
+    console.error("Error creating notification:", error)
+    throw error
+  }
+}
+
+export const getUserNotifications = async (userId) => {
+  if (!userId) return []
+  try {
+    const ref = collection(db, "users", userId, "notifications")
+    const snap = await getDocs(query(ref, where("read", "==", false)))
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+  } catch (error) {
+    console.error("Error fetching notifications:", error)
+    throw error
+  }
+}
+
+export const markNotificationRead = async (userId, notifId) => {
+  try {
+    const ref = doc(db, "users", userId, "notifications", notifId)
+    await setDoc(ref, { read: true }, { merge: true })
+  } catch (error) {
+    console.error("Error marking notification read:", error)
+    throw error
+  }
+}

@@ -142,3 +142,48 @@ export const updateUserSettings = async (userId, settings) => {
     throw error
   }
 }
+
+// ─── Groups ──────────────────────────────────────────────────────────────────
+
+export const createGroup = async (userId, { name, members }) => {
+  const memberIds = members.map((m) => m.userId)
+  if (!memberIds.includes(userId)) memberIds.push(userId)
+
+  const groupData = {
+    name,
+    createdBy: userId,
+    memberIds,
+    members,
+    createdAt: new Date().toISOString()
+  }
+
+  const ref = await addDoc(collection(db, "groups"), groupData)
+  return ref.id
+}
+
+export const getUserGroups = async (userId) => {
+  if (!userId) return []
+  const q = query(collection(db, "groups"), where("memberIds", "array-contains", userId))
+  const snap = await getDocs(q)
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+}
+
+export const getGroup = async (groupId) => {
+  const snap = await getDoc(doc(db, "groups", groupId))
+  if (!snap.exists()) return null
+  return { id: snap.id, ...snap.data() }
+}
+
+export const addMemberToGroup = async (groupId, member) => {
+  const groupRef = doc(db, "groups", groupId)
+  const snap = await getDoc(groupRef)
+  if (!snap.exists()) throw new Error("Group not found")
+
+  const { members = [], memberIds = [] } = snap.data()
+  if (memberIds.includes(member.userId)) return
+
+  await setDoc(groupRef, {
+    members: [...members, member],
+    memberIds: [...memberIds, member.userId]
+  }, { merge: true })
+}

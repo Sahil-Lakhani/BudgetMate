@@ -207,3 +207,72 @@ export const addMemberToGroup = async (groupId, member) => {
     throw error
   }
 }
+
+// ─── Splits ───────────────────────────────────────────────────────────────────
+
+export const createSplit = async (groupId, payerId, { merchant, date, totalAmount, participants }) => {
+  try {
+    const participantIds = participants.map((p) => p.userId)
+    const shareToken = Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 8)
+
+    const splitData = {
+      groupId,
+      payerId,
+      merchant,
+      date,
+      totalAmount,
+      participantIds,
+      participants,
+      shareToken,
+      createdAt: new Date().toISOString()
+    }
+
+    const ref = await addDoc(collection(db, "splits"), splitData)
+    return { splitId: ref.id, shareToken }
+  } catch (error) {
+    console.error("Error creating split:", error)
+    throw error
+  }
+}
+
+export const getGroupSplits = async (groupId) => {
+  try {
+    const q = query(collection(db, "splits"), where("groupId", "==", groupId))
+    const snap = await getDocs(q)
+    return snap.docs
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  } catch (error) {
+    console.error("Error fetching group splits:", error)
+    throw error
+  }
+}
+
+export const getSplit = async (splitId) => {
+  try {
+    const snap = await getDoc(doc(db, "splits", splitId))
+    if (!snap.exists()) return null
+    return { id: snap.id, ...snap.data() }
+  } catch (error) {
+    console.error("Error fetching split:", error)
+    throw error
+  }
+}
+
+export const settleSplit = async (splitId, userId) => {
+  try {
+    const splitRef = doc(db, "splits", splitId)
+    const snap = await getDoc(splitRef)
+    if (!snap.exists()) throw new Error("Split not found")
+
+    const { participants } = snap.data()
+    const updated = participants.map((p) =>
+      p.userId === userId ? { ...p, status: "settled" } : p
+    )
+
+    await setDoc(splitRef, { participants: updated }, { merge: true })
+  } catch (error) {
+    console.error("Error settling split:", error)
+    throw error
+  }
+}

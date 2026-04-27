@@ -1,0 +1,36 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users: readable by any authenticated user (for search), writable by self
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+
+      // Transactions: owner-only
+      match /transactions/{transactionId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Notifications: owner-only
+      match /notifications/{notifId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Groups: readable by members, writable by members
+    match /groups/{groupId} {
+      allow read: if request.auth != null && request.auth.uid in resource.data.memberIds;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && request.auth.uid in resource.data.memberIds;
+    }
+
+    // Splits: readable/writable by participants
+    match /splits/{splitId} {
+      allow read: if request.auth != null && request.auth.uid in resource.data.participantIds;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && request.auth.uid in resource.data.participantIds;
+    }
+
+  }
+}

@@ -1,9 +1,13 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { checkRateLimit } from "./rateLimit";
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GOOGLE_API_KEY);
 
 export async function analyzeReceipt(imageFile) {
   try {
+    // Check rate limit before making API call
+    checkRateLimit('gemini-analyze');
+    
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     // Convert file to base64
@@ -51,12 +55,11 @@ Rules:
     ]);
 
     const response = await result.response;
+    if (!response) throw new Error("No response from Gemini");
     const text = response.text();
-    
-    // Clean up markdown code blocks if present
-	  const jsonString = text.replace(/```json\n|\n```/g, "").trim();
-	  // console.log(jsonString);
-    
+    if (!text) throw new Error("Empty response from Gemini");
+
+    const jsonString = text.replace(/```(?:json)?\s*/gi, "").replace(/```/g, "").trim();
     return JSON.parse(jsonString);
   } catch (error) {
     console.error("Error analyzing receipt:", error);
@@ -66,6 +69,9 @@ Rules:
 
 export async function generateMonthlyInsights(transactions) {
   try {
+    // Check rate limit before making API call
+    checkRateLimit('gemini-insights');
+    
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const prompt = `You are a personal finance assistant.
@@ -109,12 +115,11 @@ ${JSON.stringify(transactions)}
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
+    if (!response) throw new Error("No response from Gemini");
     const text = response.text();
-    
-    // Clean up markdown code blocks if present
-    const jsonString = text.replace(/```json\n|\n```/g, "").trim();
-    // console.log(jsonString);
-    
+    if (!text) throw new Error("Empty response from Gemini");
+
+    const jsonString = text.replace(/```(?:json)?\s*/gi, "").replace(/```/g, "").trim();
     return JSON.parse(jsonString);
   } catch (error) {
     console.error("Error generating monthly insights:", error);

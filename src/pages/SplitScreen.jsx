@@ -101,7 +101,9 @@ export default function SplitScreen() {
         participants
       })
 
-      await Promise.all(
+      // Best-effort fan-out: the split is already saved, so a failed
+      // notification must never surface as a save error (or cause a retry/duplicate).
+      const results = await Promise.allSettled(
         participants
           .filter((p) => p.userId !== user.uid)
           .map((p) =>
@@ -116,6 +118,9 @@ export default function SplitScreen() {
             })
           )
       )
+      results
+        .filter((r) => r.status === "rejected")
+        .forEach((r) => console.warn("Notification not sent:", r.reason))
 
       navigate(`/groups/${groupId}`)
     } catch (e) {

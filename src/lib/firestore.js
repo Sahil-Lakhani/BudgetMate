@@ -324,6 +324,10 @@ export const searchUsersByName = async (name) => {
 
 // ─── Notifications ────────────────────────────────────────────────────────────
 
+// Dispatched on window after notifications are marked read so the nav badge re-counts
+export const NOTIFICATIONS_CHANGED_EVENT = "budgetmate:notifications-changed"
+
+// Not rate-limited: fanned out once per participant right after createSplit
 export const createNotification = async (userId, notifData) => {
   try {
     const validated = validateNotification(notifData)
@@ -355,4 +359,9 @@ export const markNotificationRead = async (userId, notifId) => {
     console.error("Error marking notification read:", error)
     throw error
   }
+}
+
+export const markAllNotificationsRead = async (userId) => {
+  const unread = await getUserNotifications(userId)
+  await Promise.all(unread.map((n) => markNotificationRead(userId, n.id)))
 }

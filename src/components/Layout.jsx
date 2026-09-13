@@ -5,7 +5,7 @@ import { cn } from "../lib/utils"
 import { Button } from "./Button"
 import { useTheme } from "../context/ThemeContext"
 import { useAuth } from "../context/AuthContext"
-import { getUserNotifications } from "../lib/firestore"
+import { getUserNotifications, NOTIFICATIONS_CHANGED_EVENT } from "../lib/firestore"
 
 export function Layout({ children }) {
   const location = useLocation()
@@ -16,12 +16,17 @@ export function Layout({ children }) {
 
   const [unreadCount, setUnreadCount] = useState(0)
 
+  // Re-count on route change and whenever notifications are marked read
   useEffect(() => {
     if (!user) return
-    getUserNotifications(user.uid)
-      .then((notifs) => setUnreadCount(notifs.length))
-      .catch(() => {})
-  }, [user])
+    const recount = () =>
+      getUserNotifications(user.uid)
+        .then((notifs) => setUnreadCount(notifs.length))
+        .catch(() => {})
+    recount()
+    window.addEventListener(NOTIFICATIONS_CHANGED_EVENT, recount)
+    return () => window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, recount)
+  }, [user, location.pathname])
 
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -62,6 +67,7 @@ export function Layout({ children }) {
           {navItems.map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.path
+              || (item.path !== "/" && location.pathname.startsWith(item.path + "/"))
             return (
               <Link
                 key={item.path}

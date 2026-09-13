@@ -31,8 +31,9 @@ export default function Scan() {
 
   const [previewUrl, setPreviewUrl] = useState(null)
   const [scanError, setScanError] = useState("")
-  const [groupId, setGroupId] = useState(null)
   const location = useLocation()
+  // Set when arriving from a group's "Add Split → Scan" (state carries groupId but no file)
+  const [groupId, setGroupId] = useState(location.state?.groupId || null)
 
   useEffect(() => {
     if (location.state?.file) {
@@ -244,6 +245,11 @@ export default function Scan() {
             <CardTitle>Review Extracted Data</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {groupId && (
+              <p className="text-xs text-news bg-ink/5 rounded-md px-3 py-2">
+                Splitting for a group — this receipt won't be saved to your expenses.
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Merchant</label>
@@ -380,7 +386,7 @@ export default function Scan() {
             <div className="flex gap-4 pt-4">
               <Button className="flex-1" onClick={handleSave}>
                 <Check className="mr-2 h-4 w-4" />
-                Confirm & Save
+                {groupId ? "Continue to Split" : "Confirm & Save"}
               </Button>
               <Button variant="secondary" onClick={handleCancel}>
                 <X className="mr-2 h-4 w-4" />

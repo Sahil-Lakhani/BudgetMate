@@ -287,7 +287,7 @@ export const settleSplit = async (splitId, userId) => {
 export const searchUsersByEmail = async (email) => {
   if (!email) return []
   try {
-    const q = query(collection(db, "users"), where("email", "==", email), limit(5))
+    const q = query(collection(db, "userProfiles"), where("email", "==", email), limit(5))
     const snap = await getDocs(q)
     return snap.docs.map((d) => ({ userId: d.id, ...d.data() }))
   } catch (error) {
@@ -300,7 +300,7 @@ export const searchUsersByName = async (name) => {
   if (!name) return []
   try {
     const q = query(
-      collection(db, "users"),
+      collection(db, "userProfiles"),
       where("displayName", ">=", name),
       where("displayName", "<=", name + "￿"),
       limit(5)

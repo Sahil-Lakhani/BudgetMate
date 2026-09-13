@@ -42,7 +42,7 @@ export default function CreateGroup() {
       }
       const groupId = await createGroup(user.uid, { name: name.trim(), members: [selfMember, ...members] })
       navigate(`/groups/${groupId}`)
-    } catch (e) {
+    } catch {
       setError("Failed to create group. Try again.")
       setSaving(false)
     }
@@ -72,26 +72,34 @@ export default function CreateGroup() {
             <UserSearch addedIds={addedIds} onAdd={handleAdd} />
           </div>
 
-          {members.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs text-news uppercase tracking-wider">Added ({members.length})</p>
-              {members.map((m) => (
-                <div key={m.userId} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
-                  {m.photoURL
-                    ? <img src={m.photoURL} alt={m.displayName} className="w-8 h-8 rounded-full" />
-                    : <div className="w-8 h-8 rounded-full bg-ink/10 flex items-center justify-center text-xs font-bold">{(m.displayName || m.email)[0].toUpperCase()}</div>
-                  }
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-ink truncate">{m.displayName}</p>
-                    <p className="text-xs text-news truncate">{m.email}</p>
-                  </div>
-                  <button onClick={() => handleRemove(m.userId)} className="text-news hover:text-red-500 transition-colors">
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
+          <div className="space-y-2">
+            <p className="text-xs text-news uppercase tracking-wider">Members ({members.length + 1})</p>
+            <div key={user.uid} className="flex items-center gap-3 py-2 border-b border-border">
+              {user.photoURL
+                ? <img src={user.photoURL} alt={user.displayName} className="w-8 h-8 rounded-full" />
+                : <div className="w-8 h-8 rounded-full bg-ink/10 flex items-center justify-center text-xs font-bold">{(user.displayName || user.email)[0].toUpperCase()}</div>
+              }
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-ink truncate">{user.displayName} <span className="text-news font-normal">(You)</span></p>
+                <p className="text-xs text-news truncate">{user.email}</p>
+              </div>
             </div>
-          )}
+            {members.map((m) => (
+              <div key={m.userId} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+                {m.photoURL
+                  ? <img src={m.photoURL} alt={m.displayName} className="w-8 h-8 rounded-full" />
+                  : <div className="w-8 h-8 rounded-full bg-ink/10 flex items-center justify-center text-xs font-bold">{(m.displayName || m.email)[0].toUpperCase()}</div>
+                }
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-ink truncate">{m.displayName}</p>
+                  <p className="text-xs text-news truncate">{m.email}</p>
+                </div>
+                <button onClick={() => handleRemove(m.userId)} className="text-news hover:text-red-500 transition-colors">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
 
           {error && <p className="text-sm text-red-500">{error}</p>}
 

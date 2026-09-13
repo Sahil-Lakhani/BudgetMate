@@ -20,6 +20,7 @@ export default function SplitDetail() {
   const [split, setSplit] = useState(null)
   const [loading, setLoading] = useState(true)
   const [settling, setSettling] = useState(false)
+  const [settledNote, setSettledNote] = useState("")
 
   const load = () => {
     getSplit(splitId)
@@ -28,15 +29,24 @@ export default function SplitDetail() {
       .finally(() => setLoading(false))
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load() }, [splitId])
 
   const handleSettle = async (targetUserId) => {
     setSettling(true)
+    setSettledNote("")
     try {
       await settleSplit(splitId, targetUserId)
+      const isPayer = user.uid === split.payerId
+      setSettledNote(targetUserId === split.payerId
+        ? "Marked settled."
+        : isPayer
+          ? "Recorded — the share was added back to your budget as a refund."
+          : "Recorded — your share was added to your expenses.")
       load()
     } catch (e) {
       console.error(e)
+      setSettledNote("Couldn't record the settlement. Try again.")
     } finally {
       setSettling(false)
     }
@@ -73,6 +83,7 @@ export default function SplitDetail() {
             const isMe = p.userId === user.uid
             const isPayer = p.userId === split.payerId
             const settled = p.status === "settled"
+            // New splits mark the payer's own share settled at creation; older ones can still be ticked (no money moves)
             const canSettle = (isMe || user.uid === split.payerId) && !settled
 
             return (
@@ -103,6 +114,10 @@ export default function SplitDetail() {
           })}
         </CardContent>
       </Card>
+
+      {settledNote && (
+        <p className={`text-sm ${settledNote.startsWith("Couldn't") ? "text-red-500" : "text-green-600"}`}>{settledNote}</p>
+      )}
     </div>
   )
 }

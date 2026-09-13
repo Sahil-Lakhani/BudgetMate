@@ -172,12 +172,14 @@ export default function Expenses() {
                       <div>
                         <p className="font-bold text-ink">{transaction.merchant}</p>
                         <p className="text-xs text-news">
-                          {transaction.date} • {transaction.lineItems?.[0]?.category || "General"}
+                          {transaction.date} • {transaction.type === "refund" ? "Refund" : (transaction.lineItems?.[0]?.category || "General")}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="font-bold text-lg text-ink">- {formatCurrency(parseFloat(transaction.total))}</span>
+                      <span className={`font-bold text-lg ${transaction.type === "refund" ? "text-green-600" : "text-ink"}`}>
+                        {transaction.type === "refund" ? "+ " : "- "}{formatCurrency(Math.abs(parseFloat(transaction.total)))}
+                      </span>
                       <ChevronRight className="h-4 w-4 text-ink" />
                     </div>
                   </div>

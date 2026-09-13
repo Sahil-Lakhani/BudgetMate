@@ -52,6 +52,7 @@ export default function Analytics() {
     const categoryTotals = {}
     const categoryCounts = {}
     data.forEach(t => {
+      if (t.type === "refund") return // refunds count toward totals, not category spend
       if (t.lineItems && Array.isArray(t.lineItems)) {
         t.lineItems.forEach(item => {
           const cat = item.category || 'Other'

@@ -19,15 +19,22 @@ export const ReceiptSchema = z.object({
 });
 
 // Transaction schema (for Firestore storage)
+// type "refund" = money coming back (negative total, no line items) — e.g. a split share repaid to the payer
 export const TransactionSchema = z.object({
   merchant: z.string().min(1, 'Merchant name is required'),
   location: z.string().optional(),
-  total: z.coerce.number().nonnegative('Total must be non-negative'),
+  total: z.coerce.number(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
-  lineItems: z.array(TransactionItemSchema).min(1, 'At least one item is required'),
-  source: z.enum(['scan', 'manual']).default('scan'),
+  lineItems: z.array(TransactionItemSchema).default([]),
+  source: z.enum(['scan', 'manual', 'split']).default('scan'),
+  type: z.enum(['expense', 'refund']).default('expense'),
+  splitId: z.string().optional(),
   createdAt: z.string().optional() // Will be set by Firestore
-});
+})
+  .refine((t) => t.type === 'refund' ? t.total < 0 : t.total >= 0,
+    { message: 'Expenses must be non-negative; refunds must be negative', path: ['total'] })
+  .refine((t) => t.type === 'refund' || t.lineItems.length >= 1,
+    { message: 'At least one item is required', path: ['lineItems'] });
 
 // User settings schema
 export const UserSettingsSchema = z.object({

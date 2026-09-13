@@ -125,6 +125,7 @@ export default function Scan() {
             merchant: extractedData.merchant,
             totalAmount: parseFloat(extractedData.total) || 0,
             date: extractedData.date || new Date().toISOString().slice(0, 10),
+            lineItems: transactionData.lineItems,
             fromScan: true
           }
         })

@@ -151,6 +151,8 @@ export const updateUserSettings = async (userId, settings) => {
 // ─── Groups ──────────────────────────────────────────────────────────────────
 
 export const createGroup = async (userId, { name, members }) => {
+  if (!userId) throw new Error("User ID is required")
+
   try {
     checkRateLimit('firestore-write');
 
@@ -222,24 +224,76 @@ export const addMemberToGroup = async (groupId, member) => {
 
 // ─── Splits ───────────────────────────────────────────────────────────────────
 
-export const createSplit = async (groupId, payerId, { merchant, date, totalAmount, participants }) => {
+// Split-related ledger entries use fixed ids so retries can never double-write:
+//   payer's bill:            users/{payer}/transactions/split-{splitId}
+//   participant's share:     users/{participant}/transactions/split-{splitId}-{participant}
+//   payer's refund of share: users/{payer}/transactions/split-{splitId}-{participant}
+const splitTxId = (splitId, participantId) => participantId ? `split-${splitId}-${participantId}` : `split-${splitId}`
+
+// Create-only write; "already exists" means a previous attempt succeeded, so it is not an error.
+const createSplitTransaction = async (userId, txId, transactionData) => {
+  const validated = validateTransaction(transactionData)
+  const ref = doc(db, "users", userId, "transactions", txId)
   try {
-    const participantIds = participants.map((p) => p.userId)
-    const shareToken = Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 8)
+    await setDoc(ref, { ...validated, createdAt: new Date().toISOString() })
+  } catch (error) {
+    // Cross-user writes are create-only, so a retry surfaces as permission-denied;
+    // rules allow reading exactly this doc back to confirm it is already there.
+    const existing = await getDoc(ref).catch(() => null)
+    if (existing?.exists()) return
+    throw error
+  }
+}
+
+const splitLineItems = (merchant, amount, lineItems) =>
+  lineItems?.length
+    ? lineItems
+    : [{ name: merchant, price: amount, quantity: 1, totalPrice: amount, category: "Other" }]
+
+const sortByCreatedDesc = (snap) =>
+  snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+
+export const createSplit = async (groupId, payerId, { merchant, date, totalAmount, participants, lineItems }) => {
+  try {
+    checkRateLimit('firestore-write');
+
+    const validated = validateSplit({ groupId, payerId, merchant, date, totalAmount, participants })
+
+    const tokenBytes = new Uint8Array(16)
+    crypto.getRandomValues(tokenBytes)
+    const shareToken = Array.from(tokenBytes, b => b.toString(16).padStart(2, '0')).join('')
+
+    const shares = Object.fromEntries(validated.participants.map((p) => [p.userId, p.amount]))
+
+    // The payer covered the whole bill, so their own share is settled from the start
+    const participantsWithPayer = validated.participants.map((p) =>
+      p.userId === payerId ? { ...p, status: "settled" } : p
+    )
 
     const splitData = {
-      groupId,
-      payerId,
-      merchant,
-      date,
-      totalAmount,
-      participantIds,
-      participants,
+      ...validated,
+      participants: participantsWithPayer,
+      participantIds: validated.participants.map((p) => p.userId),
+      shares,
       shareToken,
       createdAt: new Date().toISOString()
     }
 
     const ref = await addDoc(collection(db, "splits"), splitData)
+
+    // The payer paid the whole bill: record it in their ledger
+    await createSplitTransaction(payerId, splitTxId(ref.id), {
+      merchant: validated.merchant,
+      date: validated.date,
+      total: validated.totalAmount,
+      lineItems: splitLineItems(validated.merchant, validated.totalAmount, lineItems),
+      source: "split",
+      type: "expense",
+      splitId: ref.id
+    })
+
     return { splitId: ref.id, shareToken }
   } catch (error) {
     console.error("Error creating split:", error)
@@ -250,10 +304,7 @@ export const createSplit = async (groupId, payerId, { merchant, date, totalAmoun
 export const getGroupSplits = async (groupId) => {
   try {
     const q = query(collection(db, "splits"), where("groupId", "==", groupId))
-    const snap = await getDocs(q)
-    return snap.docs
-      .map((d) => ({ id: d.id, ...d.data() }))
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    return sortByCreatedDesc(await getDocs(q))
   } catch (error) {
     console.error("Error fetching group splits:", error)
     throw error
@@ -271,6 +322,8 @@ export const getSplit = async (splitId) => {
   }
 }
 
+// Marks `userId`'s share settled, then records it in both ledgers:
+// an expense for the participant and a refund for the payer.
 export const settleSplit = async (splitId, userId) => {
   try {
     checkRateLimit('firestore-write');
@@ -279,12 +332,43 @@ export const settleSplit = async (splitId, userId) => {
     const snap = await getDoc(splitRef)
     if (!snap.exists()) throw new Error("Split not found")
 
-    const { participants } = snap.data()
-    const updated = participants.map((p) =>
-      p.userId === userId ? { ...p, status: "settled" } : p
-    )
+    const split = snap.data()
+    const share = split.participants.find((p) => p.userId === userId)
+    if (!share) throw new Error("Not a participant of this split")
+    if (share.status !== "settled") {
+      const updated = split.participants.map((p) =>
+        p.userId === userId ? { ...p, status: "settled" } : p
+      )
+      await setDoc(splitRef, { participants: updated }, { merge: true })
+    }
 
-    await setDoc(splitRef, { participants: updated }, { merge: true })
+    // Payer settling their own share moves no money
+    if (userId === split.payerId) return
+
+    const today = new Date().toISOString().slice(0, 10)
+    const amount = split.shares?.[userId] ?? share.amount
+    const txId = splitTxId(splitId, userId)
+    const payerName = split.participants.find((p) => p.userId === split.payerId)?.displayName || "payer"
+
+    await createSplitTransaction(userId, txId, {
+      merchant: split.merchant,
+      date: today,
+      total: amount,
+      lineItems: splitLineItems(`${split.merchant} — your share (paid to ${payerName})`, amount),
+      source: "split",
+      type: "expense",
+      splitId
+    })
+
+    await createSplitTransaction(split.payerId, txId, {
+      merchant: `${split.merchant} — repaid by ${share.displayName || "participant"}`,
+      date: today,
+      total: -amount,
+      lineItems: [],
+      source: "split",
+      type: "refund",
+      splitId
+    })
   } catch (error) {
     console.error("Error settling split:", error)
     throw error
@@ -332,7 +416,7 @@ export const createNotification = async (userId, notifData) => {
   try {
     const validated = validateNotification(notifData)
     const ref = collection(db, "users", userId, "notifications")
-    await addDoc(ref, { ...notifData, read: false, createdAt: new Date().toISOString() })
+    await addDoc(ref, { ...validated, read: false, createdAt: new Date().toISOString() })
   } catch (error) {
     console.error("Error creating notification:", error)
     throw error

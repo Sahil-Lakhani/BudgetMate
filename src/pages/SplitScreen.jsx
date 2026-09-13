@@ -29,7 +29,7 @@ export default function SplitScreen() {
   const { currency } = useCurrency()
   const currencySymbol = getCurrencySymbol(currency)
 
-  const { merchant, totalAmount, date } = location.state || {}
+  const { merchant, totalAmount, date, lineItems } = location.state || {}
 
   const [group, setGroup] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -98,7 +98,8 @@ export default function SplitScreen() {
         merchant,
         date,
         totalAmount,
-        participants
+        participants,
+        lineItems
       })
 
       // Best-effort fan-out: the split is already saved, so a failed
@@ -175,6 +176,10 @@ export default function SplitScreen() {
           {!isValid && ` (${diff > 0 ? `-${Math.abs(diff).toFixed(2)}` : `+${Math.abs(diff).toFixed(2)}`} remaining)`}
         </span>
       </div>
+
+      <p className="text-xs text-news">
+        The full {currencySymbol}{totalAmount.toFixed(2)} is added to your expenses now; each share comes back as a refund when it's settled.
+      </p>
 
       {error && <p className="text-sm text-red-500">{error}</p>}
 

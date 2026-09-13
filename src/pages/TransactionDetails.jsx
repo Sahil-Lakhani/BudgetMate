@@ -110,18 +110,22 @@ export default function TransactionDetails() {
 								</div>
 							</div>
 							<div className=" items-center gap-2 text-news text-sm mt-1">
-								<div className="text-xl font-bold text-ink md:hidden">{formatCurrency(parseFloat(transaction.total))}</div>
-								<p className="font-bold text-news md:hidden text-right">Total</p>
+								<div className={`text-xl font-bold md:hidden ${transaction.type === "refund" ? "text-green-600" : "text-ink"}`}>
+									{transaction.type === "refund" ? "+" : ""}{formatCurrency(Math.abs(parseFloat(transaction.total)))}
+								</div>
+								<p className="font-bold text-news md:hidden text-right">{transaction.type === "refund" ? "Refund" : "Total"}</p>
 							</div>
 						</div>
 						<div className="text-left md:text-right hidden md:block">
-							<p className="text-2xl font-bold text-ink">{formatCurrency(parseFloat(transaction.total))}</p>
-							<p className="font-bold text-news">Total</p>
+							<p className={`text-2xl font-bold ${transaction.type === "refund" ? "text-green-600" : "text-ink"}`}>
+								{transaction.type === "refund" ? "+" : ""}{formatCurrency(Math.abs(parseFloat(transaction.total)))}
+							</p>
+							<p className="font-bold text-news">{transaction.type === "refund" ? "Refund" : "Total"}</p>
 						</div>
 					</div>
 
 					{/* Line Items Section */}
-					<div>
+					{transaction.type !== "refund" && <div>
 						<h4 className="text-sm font-medium text-news uppercase tracking-wider mb-4">Line Items</h4>
 						<div className="space-y-3">
 							{transaction.lineItems?.map((item, idx) => (
@@ -134,7 +138,7 @@ export default function TransactionDetails() {
 								</div>
 							))}
 						</div>
-					</div>
+					</div>}
 
 					<div className="text-xs text-news">
 						<div className="flex items-center gap-1 justify-center">

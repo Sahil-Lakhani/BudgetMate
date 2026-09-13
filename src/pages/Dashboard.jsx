@@ -106,6 +106,8 @@ export default function Dashboard() {
       if (date.getFullYear() === currentYear) yearlyTotal += amount
       if (t.date.startsWith(currentMonth)) monthlyTotal += amount
 
+      if (t.type === "refund") return // refunds count toward totals, not category spend
+
       if (t.lineItems && Array.isArray(t.lineItems)) {
         t.lineItems.forEach(item => {
           const itemTotal = parseFloat(item.totalPrice || 0)
@@ -451,11 +453,11 @@ export default function Dashboard() {
                     <div className="space-y-0.5">
                       <p className="text-sm font-medium leading-none text-ink">{transaction.merchant}</p>
                       <p className="text-xs text-news">
-                        {transaction.lineItems?.[0]?.category || "General"} • {transaction.date}
+                        {transaction.type === "refund" ? "Refund" : (transaction.lineItems?.[0]?.category || "General")} • {transaction.date}
                       </p>
                     </div>
-                    <div className="font-bold font-sans text-ink text-sm">
-                      -{formatCurrency(parseFloat(transaction.total))}
+                    <div className={`font-bold font-sans text-sm ${transaction.type === "refund" ? "text-green-600" : "text-ink"}`}>
+                      {transaction.type === "refund" ? "+" : "-"}{formatCurrency(Math.abs(parseFloat(transaction.total)))}
                     </div>
                   </div>
                 ))

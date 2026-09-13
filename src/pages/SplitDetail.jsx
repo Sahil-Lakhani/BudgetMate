@@ -54,7 +54,7 @@ export default function SplitDetail() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-3xl font-serif font-bold text-ink">{split.merchant}</h1>
+          <h1 className="text-3xl font-sans font-bold text-ink">{split.merchant}</h1>
           <p className="text-news text-sm">{split.date} · Total: {currencySymbol}{split.totalAmount.toFixed(2)}</p>
         </div>
       </div>

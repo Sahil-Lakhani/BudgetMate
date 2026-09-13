@@ -134,7 +134,7 @@ export default function SplitScreen() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-3xl font-serif font-bold text-ink">Split Bill</h1>
+          <h1 className="text-3xl font-sans font-bold text-ink">Split Bill</h1>
           <p className="text-news text-sm">{merchant} · {currencySymbol}{totalAmount?.toFixed(2)}</p>
         </div>
       </div>

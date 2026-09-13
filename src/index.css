@@ -10,7 +10,7 @@
   --color-primary: var(--color-primary);
   --color-secondary: var(--color-secondary);
   
-  --font-serif: "Playfair Display", serif;
+  --font-serif: "Inter", sans-serif; /* serif retired — headings use Inter too */
   --font-sans: "Inter", sans-serif;
 }
 
@@ -95,6 +95,6 @@
   }
   
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-serif);
+    font-family: var(--font-sans);
   }
 }

@@ -26,7 +26,7 @@ export default function Groups() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-ink">Groups</h1>
+          <h1 className="text-3xl font-sans font-bold text-ink">Groups</h1>
           <p className="text-news text-sm mt-1">Split bills with friends</p>
         </div>
         <Button onClick={() => navigate("/groups/new")} className="gap-2">

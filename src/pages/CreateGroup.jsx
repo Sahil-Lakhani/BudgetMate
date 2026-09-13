@@ -51,7 +51,7 @@ export default function CreateGroup() {
   return (
     <div className="space-y-6 max-w-lg">
       <div>
-        <h1 className="text-3xl font-serif font-bold text-ink">New Group</h1>
+        <h1 className="text-3xl font-sans font-bold text-ink">New Group</h1>
         <p className="text-news text-sm mt-1">Name your group and add members</p>
       </div>
 

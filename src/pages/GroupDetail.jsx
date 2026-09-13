@@ -39,7 +39,7 @@ export default function GroupDetail() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-3xl font-serif font-bold text-ink">{group.name}</h1>
+          <h1 className="text-3xl font-sans font-bold text-ink">{group.name}</h1>
           <p className="text-news text-sm">{group.members.length} members</p>
         </div>
         <Button onClick={() => navigate(`/groups/${groupId}/split/new`)} className="gap-2">
@@ -72,7 +72,7 @@ export default function GroupDetail() {
 
       {/* Splits */}
       <div>
-        <h2 className="text-lg font-serif font-bold text-ink mb-3">Splits</h2>
+        <h2 className="text-lg font-sans font-bold text-ink mb-3">Splits</h2>
         {splits.length === 0 && (
           <Card>
             <CardContent className="text-center py-12 text-news">

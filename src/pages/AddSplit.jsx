@@ -37,7 +37,7 @@ export default function AddSplit() {
   return (
     <div className="space-y-6 max-w-lg">
       <div>
-        <h1 className="text-3xl font-serif font-bold text-ink">Add Split</h1>
+        <h1 className="text-3xl font-sans font-bold text-ink">Add Split</h1>
         <p className="text-news text-sm mt-1">Scan a receipt or enter details manually</p>
       </div>
 

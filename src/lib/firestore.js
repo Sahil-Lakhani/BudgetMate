@@ -311,6 +311,28 @@ export const getGroupSplits = async (groupId) => {
   }
 }
 
+// Live splits for one group. Returns unsubscribe.
+export const subscribeGroupSplits = (groupId, onChange, onError = console.error) => {
+  const q = query(collection(db, "splits"), where("groupId", "==", groupId))
+  return onSnapshot(q, (snap) => onChange(sortByCreatedDesc(snap)), onError)
+}
+
+// Live splits across many groups (Firestore "in" allows 30 values per query). Returns unsubscribe.
+export const subscribeSplitsForGroups = (groupIds, onChange, onError = console.error) => {
+  if (!groupIds.length) { onChange([]); return () => {} }
+  const chunks = []
+  for (let i = 0; i < groupIds.length; i += 30) chunks.push(groupIds.slice(i, i + 30))
+  const perChunk = chunks.map(() => [])
+  const emit = () => onChange(perChunk.flat())
+  const unsubs = chunks.map((ids, i) =>
+    onSnapshot(query(collection(db, "splits"), where("groupId", "in", ids)), (snap) => {
+      perChunk[i] = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+      emit()
+    }, onError)
+  )
+  return () => unsubs.forEach((u) => u())
+}
+
 export const getSplit = async (splitId) => {
   try {
     const snap = await getDoc(doc(db, "splits", splitId))
@@ -375,7 +397,41 @@ export const settleSplit = async (splitId, userId) => {
   }
 }
 
-// ─── User Search ─────────────────────────────────────────────────────────────
+// ─── Leave / delete group ────────────────────────────────────────────────────
+
+export const leaveGroup = async (groupId, userId) => {
+  try {
+    checkRateLimit('firestore-write');
+    const groupRef = doc(db, "groups", groupId)
+    const snap = await getDoc(groupRef)
+    if (!snap.exists()) throw new Error("Group not found")
+    const { members = [], memberIds = [] } = snap.data()
+    await setDoc(groupRef, {
+      members: members.filter((m) => m.userId !== userId),
+      memberIds: memberIds.filter((id) => id !== userId)
+    }, { merge: true })
+  } catch (error) {
+    console.error("Error leaving group:", error)
+    throw error
+  }
+}
+
+// Creator only (enforced by rules). Removes the group and every split in it.
+export const deleteGroup = async (groupId) => {
+  try {
+    checkRateLimit('firestore-write');
+    const splits = await getDocs(query(collection(db, "splits"), where("groupId", "==", groupId)))
+    const batch = writeBatch(db)
+    splits.docs.forEach((d) => batch.delete(d.ref))
+    batch.delete(doc(db, "groups", groupId))
+    await batch.commit()
+  } catch (error) {
+    console.error("Error deleting group:", error)
+    throw error
+  }
+}
+
+// ─── User Search (reads public userProfiles, never private users docs) ───────
 
 export const searchUsersByEmail = async (email) => {
   if (!email) return []

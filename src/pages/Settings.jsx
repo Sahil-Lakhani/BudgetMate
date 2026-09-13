@@ -1,6 +1,6 @@
 // TODO: Github and Linkedin icons are deprecated, remove them later.
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/Card"
 import { Button } from "../components/Button"
 import { Select } from "../components/Select"
@@ -23,6 +23,7 @@ export default function Settings() {
   const [budget, setBudget] = useState(emptyBudget)
   const [dirty, setDirty] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState("")
 
   useEffect(() => {
     if (!user?.uid) return
@@ -51,12 +52,14 @@ export default function Settings() {
 
   const handleSave = async () => {
     setSaving(true)
+    setSaveError("")
     try {
       await updateUserSettings(user.uid, budget)
       setSavedBudget(budget)
       setDirty(false)
     } catch (e) {
       console.error(e)
+      setSaveError("Failed to save. Please try again.")
     } finally {
       setSaving(false)
     }
@@ -67,12 +70,12 @@ export default function Settings() {
     setDirty(false)
   }
 
-  const income = parseFloat(budget.income) || 0
-  const savingsVal = parseFloat(budget.savingsValue) || 0
-  const savingsAmount = budget.savingsType === "percentage"
-    ? (income * savingsVal) / 100
-    : savingsVal
-  const spendable = income - savingsAmount
+  const { income, savingsAmount, spendable } = useMemo(() => {
+    const inc = parseFloat(budget.income) || 0
+    const sv = parseFloat(budget.savingsValue) || 0
+    const saved = budget.savingsType === "percentage" ? (inc * sv) / 100 : sv
+    return { income: inc, savingsAmount: saved, spendable: inc - saved }
+  }, [budget.income, budget.savingsValue, budget.savingsType])
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
@@ -224,22 +227,25 @@ export default function Settings() {
                     <div className="flex-1" />
                   )}
                   {dirty && (
-                    <div className="flex items-center gap-3 shrink-0">
-                      <Button
-                        variant="primary"
-                        className="px-6 rounded-[8px]"
-                        onClick={handleSave}
-                        disabled={saving}
-                      >
-                        {saving ? "Saving..." : "Save"}
-                      </Button>
-                      <button
-                        type="button"
-                        onClick={handleReset}
-                        className="text-sm text-news hover:text-ink transition-colors"
-                      >
-                        Reset
-                      </button>
+                    <div className="flex flex-col gap-2 shrink-0">
+                      {saveError && <p className="text-sm text-red-500">{saveError}</p>}
+                      <div className="flex items-center gap-3">
+                        <Button
+                          variant="primary"
+                          className="px-6 rounded-[8px]"
+                          onClick={handleSave}
+                          disabled={saving}
+                        >
+                          {saving ? "Saving..." : "Save"}
+                        </Button>
+                        <button
+                          type="button"
+                          onClick={handleReset}
+                          className="text-sm text-news hover:text-ink transition-colors"
+                        >
+                          Reset
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -249,13 +255,10 @@ export default function Settings() {
 
           {/* Footer */}
           <div className="flex items-center justify-center gap-4 pt-1 text-base text-news">
-            <a href="https://github.com/Sahil-Lakhani" target="_blank" rel="noopener noreferrer" className="text-ink hover:text-blue-500 transition">
+            <a href="https://github.com/Sahil-Lakhani" target="_blank" rel="noopener noreferrer" className="text-ink hover:text-blue-500 transition" aria-label="GitHub profile">
               <Github className="w-5 h-5" />
             </a>
-            <a href="https://www.linkedin.com/in/YOUR-LINKEDIN-USERNAME" target="_blank" rel="noopener noreferrer" className="text-ink hover:text-blue-500 transition">
-              <Linkedin className="w-5 h-5" />
-            </a>
-            <span className="font-medium">Developed by Sahil · v1.0</span>
+            <span className="font-medium">Developed by Sahil · v2.0</span>
           </div>
         </>
       )}

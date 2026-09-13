@@ -3,7 +3,7 @@ import Insights from "../components/Insights"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
 import { ArrowDownRight, DollarSign, TrendingUp } from "lucide-react"
 import { useTheme } from "../context/ThemeContext"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { useAuth } from "../context/AuthContext"
 import { useCurrency } from "../context/CurrencyContext"
 import { CURRENCIES, getCurrencySymbol } from "../lib/currency"
@@ -11,16 +11,16 @@ import { Select } from "../components/Select"
 import { getUserTransactions, getUserSettings, updateUserSettings } from "../lib/firestore"
 import { X } from "lucide-react"
 import { Link } from "react-router-dom"
-
 import { usePageTitle } from "../lib/usePageTitle"
+
 const COLORS = {
   light: ["#8B5CF6", "#10B981", "#F59E0B", "#EF4444", "#3B82F6", "#EC4899", "#6366F1"],
   dark: ["#A78BFA", "#34D399", "#FBBF24", "#F87171", "#60A5FA", "#F472B6", "#818CF8"]
 }
 
 export default function Dashboard() {
-  const { theme } = useTheme()
   usePageTitle("Dashboard")
+  const { theme } = useTheme()
   const { user } = useAuth()
   const { currency, setCurrency, formatCurrency } = useCurrency()
   const [transactions, setTransactions] = useState([])
@@ -37,10 +37,11 @@ export default function Dashboard() {
     spendableAmount: 0,
     remainingSpendable: 0
   })
-  const [chartData, setChartData] = useState([])
+  const [rawCategoryTotals, setRawCategoryTotals] = useState({})
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [modalStep, setModalStep] = useState(1)
   const [modalError, setModalError] = useState("")
+  const [isSaving, setIsSaving] = useState(false)
   const [tempSettings, setTempSettings] = useState({
     currency: 'EUR',
     income: "",
@@ -76,13 +77,17 @@ export default function Dashboard() {
     fetchData()
   }, [user])
 
-  // Sync modal currency with context currency when modal opens
+  // Sync modal currency and lock body scroll when modal opens
   useEffect(() => {
     if (showSettingsModal) {
       setTempSettings(prev => ({ ...prev, currency }))
       setModalStep(1)
       setModalError("")
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = ""
     }
+    return () => { document.body.style.overflow = "" }
   }, [showSettingsModal])
 
   const calculateStats = (data, settings) => {
@@ -140,26 +145,22 @@ export default function Dashboard() {
     }
 
     setStats({ monthlyTotal, yearlyTotal, highestCategory, dailyAverage, income, savingsAmount, spendableAmount, remainingSpendable })
-
-    const newChartData = Object.entries(categoryTotals).map(([name, value], index) => ({
-      name: name.charAt(0).toUpperCase() + name.slice(1),
-      value,
-      color: theme === 'dark' ? COLORS.dark[index % COLORS.dark.length] : COLORS.light[index % COLORS.light.length]
-    })).sort((a, b) => b.value - a.value).slice(0, 5)
-
-    setChartData(newChartData)
+    setRawCategoryTotals(categoryTotals)
   }
 
-  useEffect(() => {
-    if (chartData.length > 0) {
-      setChartData(prev => prev.map((item, index) => ({
-        ...item,
+  const chartData = useMemo(() => {
+    return Object.entries(rawCategoryTotals)
+      .map(([name, value], index) => ({
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        value,
         color: theme === 'dark' ? COLORS.dark[index % COLORS.dark.length] : COLORS.light[index % COLORS.light.length]
-      })))
-    }
-  }, [theme])
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5)
+  }, [rawCategoryTotals, theme])
 
   const handleSaveSettings = async () => {
+    setModalError("")
     const incomeVal = parseFloat(tempSettings.income)
     const savingsVal = parseFloat(tempSettings.savingsValue)
 
@@ -172,13 +173,16 @@ export default function Dashboard() {
       return
     }
 
+    setIsSaving(true)
     try {
       await updateUserSettings(user.uid, tempSettings)
-      setCurrency(tempSettings.currency) // sync context state (no extra Firestore write)
+      setCurrency(tempSettings.currency)
       setShowSettingsModal(false)
       calculateStats(transactions, tempSettings)
     } catch (err) {
       setModalError("Failed to save settings. Please try again.")
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -271,10 +275,10 @@ export default function Dashboard() {
 
       {/* Onboarding / Settings Modal */}
       {showSettingsModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
           <div className="bg-white dark:bg-neutral-900 rounded-lg p-6 w-full max-w-md shadow-xl border border-neutral-200 dark:border-neutral-800">
             <div className="flex justify-between items-center mb-1">
-              <h3 className="text-lg font-bold text-ink">
+              <h3 id="settings-modal-title" className="text-lg font-bold text-ink">
                 {modalStep === 1 ? "Welcome to BudgetMate" : "Setup Your Budget"}
               </h3>
               <button onClick={() => setShowSettingsModal(false)} className="text-news hover:text-ink">
@@ -364,9 +368,10 @@ export default function Dashboard() {
                   </button>
                   <button
                     onClick={handleSaveSettings}
-                    className="flex-1 bg-ink text-paper py-2 rounded-md font-medium hover:opacity-70 transition-colors"
+                    disabled={isSaving}
+                    className="flex-1 bg-ink text-paper py-2 rounded-md font-medium hover:opacity-70 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Save & Calculate
+                    {isSaving ? "Saving..." : "Save & Calculate"}
                   </button>
                 </div>
               </div>

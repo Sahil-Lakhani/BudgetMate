@@ -33,13 +33,18 @@ export const saveUser = async (user) => {
   if (!user) return
 
   try {
-    const userRef = doc(db, "users", user.uid)
-    await setDoc(userRef, {
+    const publicData = {
       email: user.email,
       displayName: user.displayName || "",
       photoURL: user.photoURL || "",
       lastUpdated: new Date().toISOString()
-    }, { merge: true })
+    }
+
+    // Write public profile (searchable by other users)
+    await setDoc(doc(db, "userProfiles", user.uid), publicData, { merge: true })
+
+    // Write private user doc (owner-only)
+    await setDoc(doc(db, "users", user.uid), publicData, { merge: true })
   } catch (error) {
     console.error("Error saving user:", error)
     throw error

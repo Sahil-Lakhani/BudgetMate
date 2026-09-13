@@ -5,7 +5,7 @@ export function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-paper">Loading...</div>
+    return null
   }
 
   if (!user) {

@@ -244,7 +244,7 @@ export default function Insights({ transactions }) {
 	const currentItem = allSlides[currentSlide];
 
 	return (
-		<Card className={`mb-6 transition-colors duration-300 border-l-4 border-l-ink bg-white dark:bg-neutral-900`}>
+		<Card className={`mb-6 transition-colors duration-300 border-l-4 border-l-ink bg-card`}>
 			<CardHeader className="pb-2 flex flex-row items-center justify-between">
 				<CardTitle className={`text-lg font-sans flex items-center gap-2 text-ink`}>
 					{currentItem.isAi ? <Sparkles className="h-5 w-5" /> : <Lightbulb className="h-5 w-5 text-news" />}
@@ -259,7 +259,7 @@ export default function Insights({ transactions }) {
 							onClick={() => setCurrentSlide(index)}
 							className={`w-2 h-2 rounded-full transition-all duration-300 ${index === currentSlide
 								? 'bg-ink w-4'
-								: 'bg-neutral-300 dark:bg-neutral-700 hover:bg-neutral-400'
+								: 'bg-news-light hover:bg-news'
 								}`}
 							aria-label={`Go to slide ${index + 1}`}
 						/>
@@ -276,7 +276,7 @@ export default function Insights({ transactions }) {
 					) : currentItem.isAi ? (
 						<div className="flex flex-col gap-2">
 							<div className="flex items-start gap-3">
-								<div className="mt-1 bg-neutral-100 dark:bg-neutral-800 p-2 rounded-full hidden sm:block">
+								<div className="mt-1 bg-news-light/20 p-2 rounded-full hidden sm:block">
 									<Lightbulb className="h-4 w-4 text-ink" />
 								</div>
 								<div className="w-full">
@@ -287,7 +287,7 @@ export default function Insights({ transactions }) {
 											<TrendingDown className="h-3 w-3" />
 											Save ~{formatCurrency(currentItem.estimated_saving_per_month, currency)}
 										</span>
-										<span className="text-xs border border-neutral-200 text-ink dark:border-neutral-700 dark:text-neutral-300 px-2.5 py-1 rounded-md bg-neutral-50 dark:bg-neutral-800">
+										<span className="text-xs border border-border text-ink px-2.5 py-1 rounded-md bg-card">
 											Action: {currentItem.action}
 										</span>
 									</div>
@@ -296,7 +296,7 @@ export default function Insights({ transactions }) {
 						</div>
 					) : (
 						<div className="flex items-start gap-3 py-1">
-							<div className="mt-1 bg-neutral-100 dark:bg-neutral-800 p-2 rounded-full shadow-sm border border-neutral-200 dark:border-neutral-700 hidden sm:block">
+							<div className="mt-1 bg-news-light/20 p-2 rounded-full shadow-sm border border-border hidden sm:block">
 								{currentItem.icon}
 							</div>
 							<div>

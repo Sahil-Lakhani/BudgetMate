@@ -34,6 +34,9 @@ export function Select({ value, onChange, options = [], className }) {
       {/* Trigger */}
       <button
         type="button"
+        role="combobox"
+        aria-haspopup="listbox"
+        aria-expanded={open}
         onClick={() => setOpen(prev => !prev)}
         className="flex h-10 w-full items-center justify-between border border-border bg-card text-ink px-3 py-2 text-sm rounded-[8px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 transition-colors"
       >
@@ -48,12 +51,14 @@ export function Select({ value, onChange, options = [], className }) {
 
       {/* Dropdown list */}
       {open && (
-        <div className="absolute z-50 mt-1 w-full rounded-[8px] border border-border bg-card shadow-lg overflow-hidden">
+        <div className="absolute z-50 mt-1 w-full rounded-[8px] border border-border bg-card shadow-lg overflow-hidden" role="listbox">
           <div className="max-h-60 overflow-y-auto">
             {options.map(opt => (
               <button
                 key={opt.value}
                 type="button"
+                role="option"
+                aria-selected={value === opt.value}
                 onClick={() => handleSelect(opt.value)}
                 className={cn(
                   "flex w-full items-center justify-between px-3 py-2.5 text-sm text-ink hover:bg-news-light/40 transition-colors",

@@ -8,8 +8,21 @@ import { Badge } from "../components/Badge"
 import { useAuth } from "../context/AuthContext"
 import { useCurrency } from "../context/CurrencyContext"
 import { getTransaction, deleteTransaction } from "../lib/firestore"
-
 import { usePageTitle } from "../lib/usePageTitle"
+
+function getCategoryIcon(category) {
+	const cat = category?.toLowerCase() || ""
+	if (cat.includes("grocer") || cat.includes("food")) return <ShoppingBasket className="h-6 w-6 text-ink" />
+	if (cat.includes("cloth") || cat.includes("wear")) return <Shirt className="h-6 w-6 text-ink" />
+	if (cat.includes("electr") || cat.includes("mobile") || cat.includes("phone")) return <Smartphone className="h-6 w-6 text-ink" />
+	if (cat.includes("transport") || cat.includes("gas") || cat.includes("fuel") || cat.includes("uber")) return <Car className="h-6 w-6 text-ink" />
+	if (cat.includes("home") || cat.includes("rent") || cat.includes("house")) return <Home className="h-6 w-6 text-ink" />
+	if (cat.includes("util") || cat.includes("bill") || cat.includes("internet")) return <Zap className="h-6 w-6 text-ink" />
+	if (cat.includes("restaurant") || cat.includes("dining") || cat.includes("eat")) return <Utensils className="h-6 w-6 text-ink" />
+	if (cat.includes("coffee") || cat.includes("cafe")) return <Coffee className="h-6 w-6 text-ink" />
+	return <Tag className="h-6 w-6 text-ink" />
+}
+
 export default function TransactionDetails() {
 	const { id } = useParams()
 	usePageTitle("Transaction Details")
@@ -18,6 +31,7 @@ export default function TransactionDetails() {
 	const { formatCurrency } = useCurrency()
 	const [transaction, setTransaction] = useState(null)
 	const [loading, setLoading] = useState(true)
+	const [deleting, setDeleting] = useState(false)
 
 	useEffect(() => {
 		const fetchTransaction = async () => {
@@ -36,28 +50,18 @@ export default function TransactionDetails() {
 	}, [user, id])
 
 	const handleDelete = async () => {
+		if (deleting) return
 		if (confirm("Are you sure you want to delete this transaction?")) {
+			setDeleting(true)
 			try {
 				await deleteTransaction(user.uid, id)
 				navigate("/expenses")
 			} catch (error) {
 				console.error("Error deleting transaction:", error)
 				alert("Failed to delete transaction.")
+				setDeleting(false)
 			}
 		}
-	}
-
-	const getCategoryIcon = (category) => {
-		const cat = category?.toLowerCase() || ""
-		if (cat.includes("grocer") || cat.includes("food")) return <ShoppingBasket className="h-6 w-6 text-ink" />
-		if (cat.includes("cloth") || cat.includes("wear")) return <Shirt className="h-6 w-6 text-ink" />
-		if (cat.includes("electr") || cat.includes("mobile") || cat.includes("phone")) return <Smartphone className="h-6 w-6 text-ink" />
-		if (cat.includes("transport") || cat.includes("gas") || cat.includes("fuel") || cat.includes("uber")) return <Car className="h-6 w-6 text-ink" />
-		if (cat.includes("home") || cat.includes("rent") || cat.includes("house")) return <Home className="h-6 w-6 text-ink" />
-		if (cat.includes("util") || cat.includes("bill") || cat.includes("internet")) return <Zap className="h-6 w-6 text-ink" />
-		if (cat.includes("restaurant") || cat.includes("dining") || cat.includes("eat")) return <Utensils className="h-6 w-6 text-ink" />
-		if (cat.includes("coffee") || cat.includes("cafe")) return <Coffee className="h-6 w-6 text-ink" />
-		return <Tag className="h-6 w-6 text-ink" />
 	}
 
 	if (loading) {
@@ -82,7 +86,7 @@ export default function TransactionDetails() {
 					</Button>
 					<h2 className="text-2xl font-sans font-bold text-ink">Transaction Details</h2>
 				</div>
-				<Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700 hover:bg-red-100" onClick={handleDelete}>
+				<Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700 hover:bg-red-100 disabled:opacity-40" onClick={handleDelete} disabled={deleting} aria-label="Delete transaction">
 					<Trash2 className="h-5 w-5" />
 				</Button>
 			</div>
@@ -96,7 +100,7 @@ export default function TransactionDetails() {
 								{getCategoryIcon(transaction.lineItems?.[0]?.category || "General")}
 							</div>
 							<div className="flex-1">
-								<div className="flex items-center justify-between md:justify-start">
+								<div className="flex items-center gap-2 flex-wrap justify-between md:justify-start">
 									<h3 className="text-xl font-bold text-ink">{transaction.merchant}</h3>
 									<SplitTag transaction={transaction} />
 								</div>

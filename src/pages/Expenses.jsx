@@ -14,15 +14,16 @@ import { useAuth } from "../context/AuthContext"
 import { useCurrency } from "../context/CurrencyContext"
 import { getUserTransactions } from "../lib/firestore"
 import { useNavigate } from "react-router-dom"
-
 import { usePageTitle } from "../lib/usePageTitle"
+
 export default function Expenses() {
-  const { user } = useAuth()
   usePageTitle("Expenses")
+  const { user } = useAuth()
   const { formatCurrency } = useCurrency()
   const navigate = useNavigate()
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [filterCategory, setFilterCategory] = useState("All")
 
@@ -38,6 +39,7 @@ export default function Expenses() {
           setTransactions(data)
         } catch (error) {
           console.error("Error loading expenses:", error)
+          setFetchError("Failed to load transactions. Please check your connection.")
         } finally {
           setLoading(false)
         }
@@ -82,6 +84,10 @@ export default function Expenses() {
 
   if (loading) {
     return <div className="p-8 text-center text-news">Loading expenses...</div>
+  }
+
+  if (fetchError) {
+    return <div className="p-8 text-center text-red-500">{fetchError}</div>
   }
 
   return (

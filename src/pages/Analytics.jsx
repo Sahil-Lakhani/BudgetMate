@@ -13,6 +13,7 @@ export default function Analytics() {
   const { user } = useAuth()
   const { formatCurrency } = useCurrency()
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState("")
   const [monthlyData, setMonthlyData] = useState([])
   const [topCategories, setTopCategories] = useState([])
   const [totalTransactions, setTotalTransactions] = useState(0)
@@ -25,7 +26,10 @@ export default function Analytics() {
         setMonthlyData(computeMonthlyData(data))
         setTopCategories(computeCategories(data))
       })
-      .catch(console.error)
+      .catch(err => {
+        console.error("Error loading analytics:", err)
+        setFetchError("Failed to load analytics data. Please check your connection.")
+      })
       .finally(() => setLoading(false))
   }, [user])
 
@@ -78,6 +82,10 @@ export default function Analytics() {
 
   if (loading) {
     return <div className="p-8 text-center text-news">Loading analytics...</div>
+  }
+
+  if (fetchError) {
+    return <div className="p-8 text-center text-red-500">{fetchError}</div>
   }
 
   const currentMonthTotal = monthlyData[monthlyData.length - 1]?.total || 0

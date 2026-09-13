@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /$
+Allow: /login
+Disallow: /expenses
+Disallow: /scan
+Disallow: /analytics
+Disallow: /settings
+
+Sitemap: https://budgetmate.vercel.app/sitemap.xml

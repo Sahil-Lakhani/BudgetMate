@@ -9,6 +9,7 @@ import { useCurrency } from "../context/CurrencyContext"
 import { getCurrencySymbol } from "../lib/currency"
 import { saveTransaction } from "../lib/firestore"
 import { Select } from "../components/Select"
+import { usePageTitle } from "../lib/usePageTitle"
 
 const CATEGORIES = [
 	"Groceries",
@@ -23,6 +24,7 @@ const CATEGORIES = [
 ]
 
 export default function AddTransaction() {
+	usePageTitle("Add Transaction")
 	const navigate = useNavigate()
 	const { user } = useAuth()
 	const { currency } = useCurrency()

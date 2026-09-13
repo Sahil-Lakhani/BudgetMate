@@ -12,6 +12,7 @@ import { getUserTransactions, getUserSettings, updateUserSettings } from "../lib
 import { X } from "lucide-react"
 import { Link } from "react-router-dom"
 
+import { usePageTitle } from "../lib/usePageTitle"
 const COLORS = {
   light: ["#8B5CF6", "#10B981", "#F59E0B", "#EF4444", "#3B82F6", "#EC4899", "#6366F1"],
   dark: ["#A78BFA", "#34D399", "#FBBF24", "#F87171", "#60A5FA", "#F472B6", "#818CF8"]
@@ -19,6 +20,7 @@ const COLORS = {
 
 export default function Dashboard() {
   const { theme } = useTheme()
+  usePageTitle("Dashboard")
   const { user } = useAuth()
   const { currency, setCurrency, formatCurrency } = useCurrency()
   const [transactions, setTransactions] = useState([])

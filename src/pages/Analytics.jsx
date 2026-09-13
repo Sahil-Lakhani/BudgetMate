@@ -5,8 +5,10 @@ import { useTheme } from "../context/ThemeContext"
 import { useAuth } from "../context/AuthContext"
 import { useCurrency } from "../context/CurrencyContext"
 import { getUserTransactions } from "../lib/firestore"
+import { usePageTitle } from "../lib/usePageTitle"
 
 export default function Analytics() {
+  usePageTitle("Analytics")
   const { theme } = useTheme()
   const { user } = useAuth()
   const { formatCurrency } = useCurrency()

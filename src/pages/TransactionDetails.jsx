@@ -8,8 +8,10 @@ import { useAuth } from "../context/AuthContext"
 import { useCurrency } from "../context/CurrencyContext"
 import { getTransaction, deleteTransaction } from "../lib/firestore"
 
+import { usePageTitle } from "../lib/usePageTitle"
 export default function TransactionDetails() {
 	const { id } = useParams()
+	usePageTitle("Transaction Details")
 	const navigate = useNavigate()
 	const { user } = useAuth()
 	const { formatCurrency } = useCurrency()

@@ -9,9 +9,11 @@ import { useAuth } from "../context/AuthContext"
 import { useCurrency } from "../context/CurrencyContext"
 import { CURRENCIES, getCurrencySymbol } from "../lib/currency"
 import { getUserSettings, updateUserSettings } from "../lib/firestore"
-import { LogOut, Github, Linkedin } from "lucide-react"
+import { LogOut, Github } from "lucide-react"
+import { usePageTitle } from "../lib/usePageTitle"
 
 export default function Settings() {
+  usePageTitle("Settings")
   const { user, logout } = useAuth()
   const { currency, updateCurrency } = useCurrency()
   const currencySymbol = getCurrencySymbol(currency)

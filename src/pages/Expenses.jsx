@@ -14,8 +14,10 @@ import { useCurrency } from "../context/CurrencyContext"
 import { getUserTransactions } from "../lib/firestore"
 import { useNavigate } from "react-router-dom"
 
+import { usePageTitle } from "../lib/usePageTitle"
 export default function Expenses() {
   const { user } = useAuth()
+  usePageTitle("Expenses")
   const { formatCurrency } = useCurrency()
   const navigate = useNavigate()
   const [transactions, setTransactions] = useState([])

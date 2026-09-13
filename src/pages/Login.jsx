@@ -1,6 +1,7 @@
 import { useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
+import { usePageTitle } from "../lib/usePageTitle"
 import { Button } from "../components/Button"
 import {
   Card,
@@ -14,6 +15,7 @@ import {
 import { DotScreenShader } from "../components/dot-shader-background"
 
 export default function Login() {
+  usePageTitle(null) // keeps "BudgetMate" as-is — matches og:title for the landing page
   const { user, loginWithGoogle } = useAuth()
   const navigate = useNavigate()
 

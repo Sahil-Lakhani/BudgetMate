@@ -10,11 +10,14 @@ import { usePageTitle } from "../lib/usePageTitle"
 import { useCurrency } from "../context/CurrencyContext"
 import { getCurrencySymbol } from "../lib/currency"
 
-function distributeEvenly(total, count) {
+// Splits `total` into `count` equal shares; the rounding remainder goes to
+// `remainderIndex` (the payer), falling back to the first share.
+function distributeEvenly(total, count, remainderIndex = 0) {
   if (count === 0) return []
   const base = Math.floor((total * 100) / count) / 100
   const remainder = Math.round((total - base * count) * 100) / 100
-  return Array.from({ length: count }, (_, i) => (i === 0 ? base + remainder : base))
+  const target = remainderIndex >= 0 && remainderIndex < count ? remainderIndex : 0
+  return Array.from({ length: count }, (_, i) => (i === target ? Math.round((base + remainder) * 100) / 100 : base))
 }
 
 export default function SplitScreen() {
@@ -44,13 +47,14 @@ export default function SplitScreen() {
         g.members.forEach((m) => { initialActive[m.userId] = true })
         setActive(initialActive)
 
-        const shares = distributeEvenly(totalAmount, g.members.length)
+        const payerIndex = g.members.findIndex((m) => m.userId === user.uid)
+        const shares = distributeEvenly(totalAmount, g.members.length, payerIndex)
         const initialAmounts = {}
         g.members.forEach((m, i) => { initialAmounts[m.userId] = shares[i] })
         setAmounts(initialAmounts)
       }
     }).catch(console.error).finally(() => setLoading(false))
-  }, [groupId, totalAmount])
+  }, [groupId, totalAmount, user.uid])
 
   const activeMembers = group?.members.filter((m) => active[m.userId]) || []
   const assigned = activeMembers.reduce((sum, m) => sum + (amounts[m.userId] || 0), 0)
@@ -58,11 +62,13 @@ export default function SplitScreen() {
   const isValid = Math.abs(diff) < 0.005
 
   const handleToggle = (userId) => {
+    if (userId === user.uid) return // payer is always a participant
     const nextActive = { ...active, [userId]: !active[userId] }
     const nowActive = group.members.filter((m) => nextActive[m.userId])
     if (nowActive.length === 0) return
 
-    const shares = distributeEvenly(totalAmount, nowActive.length)
+    const payerIndex = nowActive.findIndex((m) => m.userId === user.uid)
+    const shares = distributeEvenly(totalAmount, nowActive.length, payerIndex)
     const nextAmounts = { ...amounts }
     nowActive.forEach((m, i) => { nextAmounts[m.userId] = shares[i] })
     setActive(nextActive)
@@ -148,7 +154,7 @@ export default function SplitScreen() {
               participant={m}
               amount={amounts[m.userId] || 0}
               isActive={!!active[m.userId]}
-              isLastActive={activeMembers.length === 1 && active[m.userId]}
+              isLastActive={m.userId === user.uid || (activeMembers.length === 1 && active[m.userId])}
               onToggle={() => handleToggle(m.userId)}
               onAmountChange={(val) => handleAmountChange(m.userId, val)}
               currencySymbol={currencySymbol}

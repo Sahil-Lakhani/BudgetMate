@@ -1,6 +1,6 @@
 import { db } from "./firebase"
-import { collection, getDocs, query, orderBy, addDoc, doc, setDoc, getDoc, deleteDoc, where, limit, onSnapshot } from "firebase/firestore"
-import { validateTransaction, validateUserSettings } from "./validation"
+import { collection, getDocs, query, addDoc, doc, setDoc, getDoc, deleteDoc, where, limit, onSnapshot, writeBatch } from "firebase/firestore"
+import { validateTransaction, validateUserSettings, validateGroup, validateSplit, validateNotification } from "./validation"
 import { checkRateLimit } from "./rateLimit"
 
 export const getUserTransactions = async (userId) => {
@@ -152,14 +152,21 @@ export const updateUserSettings = async (userId, settings) => {
 
 export const createGroup = async (userId, { name, members }) => {
   try {
-    const memberIds = members.map((m) => m.userId)
-    if (!memberIds.includes(userId)) memberIds.push(userId)
+    checkRateLimit('firestore-write');
+
+    const validated = validateGroup({ name, members })
+
+    // Creator must be a member (rules require it); keep members/memberIds in sync
+    if (!validated.members.some((m) => m.userId === userId)) {
+      throw new Error("Group creator must be included in members")
+    }
+    const allMembers = validated.members
 
     const groupData = {
-      name,
+      name: validated.name,
       createdBy: userId,
-      memberIds,
-      members,
+      memberIds: allMembers.map((m) => m.userId),
+      members: allMembers,
       createdAt: new Date().toISOString()
     }
 
@@ -266,6 +273,8 @@ export const getSplit = async (splitId) => {
 
 export const settleSplit = async (splitId, userId) => {
   try {
+    checkRateLimit('firestore-write');
+
     const splitRef = doc(db, "splits", splitId)
     const snap = await getDoc(splitRef)
     if (!snap.exists()) throw new Error("Split not found")
@@ -317,6 +326,7 @@ export const searchUsersByName = async (name) => {
 
 export const createNotification = async (userId, notifData) => {
   try {
+    const validated = validateNotification(notifData)
     const ref = collection(db, "users", userId, "notifications")
     await addDoc(ref, { ...notifData, read: false, createdAt: new Date().toISOString() })
   } catch (error) {

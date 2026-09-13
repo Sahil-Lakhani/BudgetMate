@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom"
 import { ArrowLeft, Calendar, MapPin, ShoppingBasket, Shirt, Smartphone, Coffee, Utensils, Car, Home, Zap, Tag, Trash2 } from "lucide-react"
 import { Button } from "../components/Button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/Card"
+import { SplitTag } from "../components/SplitTag"
 import { Badge } from "../components/Badge"
 import { useAuth } from "../context/AuthContext"
 import { useCurrency } from "../context/CurrencyContext"
@@ -97,6 +98,7 @@ export default function TransactionDetails() {
 							<div className="flex-1">
 								<div className="flex items-center justify-between md:justify-start">
 									<h3 className="text-xl font-bold text-ink">{transaction.merchant}</h3>
+									<SplitTag transaction={transaction} />
 								</div>
 								<div className="flex items-center gap-2 text-news text-sm mt-1">
 									<Calendar className="h-3 w-3" />

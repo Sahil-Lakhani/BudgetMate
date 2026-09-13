@@ -9,6 +9,7 @@ import { Input } from "../components/Input"
 import { Badge } from "../components/Badge"
 import { Search, Filter, ChevronRight, ShoppingBasket, Shirt, Smartphone, Coffee, Utensils, Car, Home, Zap, Tag, Plus } from "lucide-react"
 import { Button } from "../components/Button"
+import { SplitTag } from "../components/SplitTag"
 import { useAuth } from "../context/AuthContext"
 import { useCurrency } from "../context/CurrencyContext"
 import { getUserTransactions } from "../lib/firestore"
@@ -170,7 +171,10 @@ export default function Expenses() {
                         {getCategoryIcon(transaction.lineItems?.[0]?.category || "General")}
                       </div>
                       <div>
-                        <p className="font-bold text-ink">{transaction.merchant}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-bold text-ink">{transaction.merchant}</p>
+                          <SplitTag transaction={transaction} />
+                        </div>
                         <p className="text-xs text-news">
                           {transaction.date} • {transaction.type === "refund" ? "Refund" : (transaction.lineItems?.[0]?.category || "General")}
                         </p>

@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../components/Card"
+import { SplitTag } from "../components/SplitTag"
 import Insights from "../components/Insights"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
 import { ArrowDownRight, DollarSign, TrendingUp } from "lucide-react"
@@ -451,7 +452,10 @@ export default function Dashboard() {
                 transactions.slice(0, 7).map((transaction) => (
                   <div key={transaction.id} className="flex items-center justify-between border-b border-border pb-2 last:border-0 last:pb-0">
                     <div className="space-y-0.5">
-                      <p className="text-sm font-medium leading-none text-ink">{transaction.merchant}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-medium leading-none text-ink">{transaction.merchant}</p>
+                        <SplitTag transaction={transaction} />
+                      </div>
                       <p className="text-xs text-news">
                         {transaction.type === "refund" ? "Refund" : (transaction.lineItems?.[0]?.category || "General")} • {transaction.date}
                       </p>

@@ -5,19 +5,37 @@ import { getGroup, createSplit, createNotification } from "../lib/firestore"
 import { SplitRow } from "../components/SplitRow"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/Card"
 import { Button } from "../components/Button"
-import { Loader2, ArrowLeft } from "lucide-react"
+import { Loader2, ArrowLeft, Equal } from "lucide-react"
 import { usePageTitle } from "../lib/usePageTitle"
 import { useCurrency } from "../context/CurrencyContext"
 import { getCurrencySymbol } from "../lib/currency"
+
+const round2 = (n) => Math.round(n * 100) / 100
+
+// Navigation state is untrusted: the scanner may hand over a string, NaN, a negative,
+// or a value with three decimals. Anything that is not a positive amount becomes null,
+// which the page treats the same as no data at all.
+function normaliseTotal(value) {
+  const n = typeof value === "string" ? parseFloat(value) : Number(value)
+  if (!Number.isFinite(n) || n <= 0) return null
+  return round2(n)
+}
+
+// A typed share can only ever be a non-negative amount in whole cents.
+function normaliseShare(value) {
+  const n = Number(value)
+  if (!Number.isFinite(n) || n < 0) return 0
+  return round2(n)
+}
 
 // Splits `total` into `count` equal shares; the rounding remainder goes to
 // `remainderIndex` (the payer), falling back to the first share.
 function distributeEvenly(total, count, remainderIndex = 0) {
   if (count === 0) return []
   const base = Math.floor((total * 100) / count) / 100
-  const remainder = Math.round((total - base * count) * 100) / 100
+  const remainder = round2(total - base * count)
   const target = remainderIndex >= 0 && remainderIndex < count ? remainderIndex : 0
-  return Array.from({ length: count }, (_, i) => (i === target ? Math.round((base + remainder) * 100) / 100 : base))
+  return Array.from({ length: count }, (_, i) => (i === target ? round2(base + remainder) : base))
 }
 
 export default function SplitScreen() {
@@ -29,7 +47,8 @@ export default function SplitScreen() {
   const { currency } = useCurrency()
   const currencySymbol = getCurrencySymbol(currency)
 
-  const { merchant, totalAmount, date, lineItems } = location.state || {}
+  const { merchant, date, lineItems } = location.state || {}
+  const totalAmount = normaliseTotal(location.state?.totalAmount)
 
   const [group, setGroup] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -42,7 +61,7 @@ export default function SplitScreen() {
     if (!groupId) return
     getGroup(groupId).then((g) => {
       setGroup(g)
-      if (g) {
+      if (g && totalAmount) {
         const initialActive = {}
         g.members.forEach((m) => { initialActive[m.userId] = true })
         setActive(initialActive)
@@ -56,10 +75,28 @@ export default function SplitScreen() {
     }).catch(console.error).finally(() => setLoading(false))
   }, [groupId, totalAmount, user.uid])
 
+  // The payer must be on the roster: rules require the payer to be a participant, and a
+  // member who left (or a stale link) would otherwise fail only at save time.
+  const isMember = !!group?.members.some((m) => m.userId === user.uid)
+
   const activeMembers = group?.members.filter((m) => active[m.userId]) || []
-  const assigned = activeMembers.reduce((sum, m) => sum + (amounts[m.userId] || 0), 0)
-  const diff = Math.round((totalAmount - assigned) * 100) / 100
+  const assigned = round2(activeMembers.reduce((sum, m) => sum + (amounts[m.userId] || 0), 0))
+  const diff = round2((totalAmount || 0) - assigned)
   const isValid = Math.abs(diff) < 0.005
+
+  // Someone left at 0.00 owes nothing, so they are not part of the split — saying so
+  // beats sending them a "you owe 0.00" notification.
+  const zeroShare = activeMembers.filter((m) => m.userId !== user.uid && !(amounts[m.userId] > 0))
+
+  const splitEqually = (members = activeMembers) => {
+    const payerIndex = members.findIndex((m) => m.userId === user.uid)
+    const shares = distributeEvenly(totalAmount, members.length, payerIndex)
+    setAmounts((prev) => {
+      const next = { ...prev }
+      members.forEach((m, i) => { next[m.userId] = shares[i] })
+      return next
+    })
+  }
 
   const handleToggle = (userId) => {
     if (userId === user.uid) return // payer is always a participant
@@ -67,16 +104,12 @@ export default function SplitScreen() {
     const nowActive = group.members.filter((m) => nextActive[m.userId])
     if (nowActive.length === 0) return
 
-    const payerIndex = nowActive.findIndex((m) => m.userId === user.uid)
-    const shares = distributeEvenly(totalAmount, nowActive.length, payerIndex)
-    const nextAmounts = { ...amounts }
-    nowActive.forEach((m, i) => { nextAmounts[m.userId] = shares[i] })
     setActive(nextActive)
-    setAmounts(nextAmounts)
+    splitEqually(nowActive)
   }
 
   const handleAmountChange = (userId, value) => {
-    setAmounts((prev) => ({ ...prev, [userId]: value }))
+    setAmounts((prev) => ({ ...prev, [userId]: normaliseShare(value) }))
   }
 
   const handleConfirm = async () => {
@@ -85,7 +118,7 @@ export default function SplitScreen() {
     setError("")
     try {
       const participants = group.members
-        .filter((m) => active[m.userId])
+        .filter((m) => active[m.userId] && (m.userId === user.uid || amounts[m.userId] > 0))
         .map((m) => ({
           userId: m.userId,
           displayName: m.displayName,
@@ -138,6 +171,12 @@ export default function SplitScreen() {
       <Button onClick={() => navigate(`/groups/${groupId}`)}>Back to Group</Button>
     </div>
   )
+  if (!isMember) return (
+    <div className="space-y-4">
+      <p className="text-news">You're no longer a member of this group, so you can't split a bill in it.</p>
+      <Button onClick={() => navigate("/groups")}>Back to Groups</Button>
+    </div>
+  )
 
   return (
     <div className="space-y-6 max-w-lg">
@@ -152,7 +191,12 @@ export default function SplitScreen() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Assign Shares</CardTitle></CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle>Assign Shares</CardTitle>
+          <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => splitEqually()}>
+            <Equal className="h-4 w-4" /> Split equally
+          </Button>
+        </CardHeader>
         <CardContent>
           {group.members.map((m) => (
             <SplitRow
@@ -176,6 +220,12 @@ export default function SplitScreen() {
           {!isValid && ` (${diff > 0 ? `-${Math.abs(diff).toFixed(2)}` : `+${Math.abs(diff).toFixed(2)}`} remaining)`}
         </span>
       </div>
+
+      {zeroShare.length > 0 && (
+        <p className="text-xs text-news">
+          {zeroShare.map((m) => m.displayName || m.email || "A member").join(", ")} {zeroShare.length === 1 ? "has" : "have"} a 0.00 share and will be left out of this split.
+        </p>
+      )}
 
       <p className="text-xs text-news">
         The full {currencySymbol}{totalAmount.toFixed(2)} is added to your expenses now; each share comes back as a refund when it's settled.

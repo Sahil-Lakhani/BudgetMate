@@ -1,35 +1,153 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users: readable by any authenticated user (for search), writable by self
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function splitDoc(splitId) {
+      return get(/databases/$(database)/documents/splits/$(splitId)).data;
+    }
+
+    function groupDoc(groupId) {
+      return get(/databases/$(database)/documents/groups/$(groupId)).data;
+    }
+
+    // True when the requester is the payer or the named participant of the split
+    // that transaction id `split-{splitId}-{participant}` in `ownerId`'s ledger refers to.
+    function isSplitTxCounterparty(ownerId, txId, splitId) {
+      return (
+        // requester is a participant reading their refund doc in the payer's ledger
+        ( txId == 'split-' + splitId + '-' + request.auth.uid
+          && splitDoc(splitId).payerId == ownerId )
+        ||
+        // requester is the payer reading the expense doc in the participant's ledger
+        ( txId == 'split-' + splitId + '-' + ownerId
+          && splitDoc(splitId).payerId == request.auth.uid )
+      );
+    }
+
+    // Public profiles — name/email/photo only, readable by any authenticated user for search
+    match /userProfiles/{userId} {
+      allow read: if signedIn();
+      allow write: if isSelf(userId);
+    }
+
+    // Private user doc — owner-only (search uses userProfiles)
     match /users/{userId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isSelf(userId);
 
-      // Transactions: owner-only
+      // Owner has full access. Two narrowly-scoped cross-user creates exist so a
+      // settled split can be recorded in both ledgers (fixed ids => idempotent):
+      //   split-{splitId}-{participant} in the PARTICIPANT's ledger: an expense equal to
+      //     their share, written by the payer (when the payer marks them settled)
+      //   split-{splitId}-{participant} in the PAYER's ledger: a refund of that share,
+      //     written by the participant (when they settle themselves)
+      // The counterparty may also `get` (not list) that one doc to confirm a retry.
       match /transactions/{transactionId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if isSelf(userId);
+
+        allow get: if signedIn()
+          && resource.data.source == 'split'
+          && isSplitTxCounterparty(userId, transactionId, resource.data.splitId);
+
+        allow create: if signedIn()
+          && request.resource.data.source == 'split'
+          && request.resource.data.splitId is string
+          && request.resource.data.keys().hasAll(['merchant', 'date', 'total', 'lineItems', 'source', 'type', 'splitId', 'createdAt'])
+          && (
+            // payer -> participant's ledger: expense of their share
+            ( request.resource.data.type == 'expense'
+              && transactionId == 'split-' + request.resource.data.splitId + '-' + userId
+              && splitDoc(request.resource.data.splitId).payerId == request.auth.uid
+              && userId in splitDoc(request.resource.data.splitId).participantIds
+              && request.resource.data.total == splitDoc(request.resource.data.splitId).shares[userId] )
+            ||
+            // participant -> payer's ledger: refund of the participant's share
+            ( request.resource.data.type == 'refund'
+              && transactionId == 'split-' + request.resource.data.splitId + '-' + request.auth.uid
+              && splitDoc(request.resource.data.splitId).payerId == userId
+              && request.auth.uid in splitDoc(request.resource.data.splitId).participantIds
+              && request.resource.data.total + splitDoc(request.resource.data.splitId).shares[request.auth.uid] == 0 )
+          );
       }
 
-      // Notifications: owner-only
+      // Owner reads/updates/deletes. Two kinds may be created by someone else:
+      //   split_added  — by the payer of a split, for that split's participants
+      //   group_added  — by a member of a group, for another member of that group
+      //                  (checked after the add has landed, so the recipient is already in memberIds)
       match /notifications/{notifId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, update, delete: if isSelf(userId);
+        allow create: if signedIn()
+          && request.resource.data.read == false
+          && (
+            ( request.resource.data.type == 'split_added'
+              && request.resource.data.keys().hasOnly(
+                   ['type', 'splitId', 'groupId', 'groupName', 'payerName', 'merchant', 'amount', 'read', 'createdAt'])
+              && splitDoc(request.resource.data.splitId).payerId == request.auth.uid
+              && userId in splitDoc(request.resource.data.splitId).participantIds )
+            ||
+            ( request.resource.data.type == 'group_added'
+              && request.resource.data.keys().hasOnly(
+                   ['type', 'groupId', 'groupName', 'addedByName', 'read', 'createdAt'])
+              && userId != request.auth.uid
+              && request.auth.uid in groupDoc(request.resource.data.groupId).memberIds
+              && userId in groupDoc(request.resource.data.groupId).memberIds )
+          );
       }
     }
 
-    // Groups: readable by members, writable by members
+    // Groups — readable/updatable by members; creator must include themselves
     match /groups/{groupId} {
-      allow read: if request.auth != null && request.auth.uid in resource.data.memberIds;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null && request.auth.uid in resource.data.memberIds;
+      allow read: if signedIn() && request.auth.uid in resource.data.memberIds;
+      allow create: if signedIn()
+        && request.auth.uid in request.resource.data.memberIds
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 1
+        && request.resource.data.name.size() <= 60
+        && request.resource.data.memberIds.size() <= 20;
+      // Members may change the roster in exactly two ways:
+      //   add    — memberIds grows (never shrinks), stays within the cap, members[] kept in step
+      //   leave  — memberIds is the old set minus the requester, nothing else
+      // Name and creator are fixed for life.
+      allow update: if signedIn() && request.auth.uid in resource.data.memberIds
+        && request.resource.data.name == resource.data.name
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.members.size() == request.resource.data.memberIds.size()
+        && request.resource.data.memberIds.toSet().size() == request.resource.data.memberIds.size()
+        && (
+          ( request.resource.data.memberIds.toSet().hasAll(resource.data.memberIds.toSet())
+            && request.resource.data.memberIds.size() <= 20 )
+          || request.resource.data.memberIds.toSet() == resource.data.memberIds.toSet().difference([request.auth.uid].toSet())
+        );
+      allow delete: if signedIn() && request.auth.uid == resource.data.createdBy;
     }
 
-    // Splits: readable/writable by participants
+    // Splits — readable by participants and by any member of the split's group
+    // (so the group page can list every split); updatable by participants;
+    // creator must be the payer and a participant.
     match /splits/{splitId} {
-      allow read: if request.auth != null && request.auth.uid in resource.data.participantIds;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null && request.auth.uid in resource.data.participantIds;
+      allow read: if signedIn() && (
+        request.auth.uid in resource.data.participantIds
+        || request.auth.uid in groupDoc(resource.data.groupId).memberIds
+      );
+      allow create: if signedIn()
+        && request.auth.uid in request.resource.data.participantIds
+        && request.resource.data.payerId == request.auth.uid
+        && request.resource.data.totalAmount is number
+        && request.resource.data.totalAmount > 0;
+      allow update: if signedIn() && request.auth.uid in resource.data.participantIds;
+      // Payer, or the group's creator (cascade when deleting the group)
+      allow delete: if signedIn() && (
+        request.auth.uid == resource.data.payerId
+        || request.auth.uid == groupDoc(resource.data.groupId).createdBy
+      );
     }
 
   }

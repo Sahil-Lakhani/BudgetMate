@@ -25,3 +25,32 @@ dist-ssr
 
 # Environment variables
 .env
+.env.*
+!.env.example
+
+# Claude / AI tooling
+.claude/
+.superpowers/
+CLAUDE.md
+SECURITY.md
+test
+
+# OS junk
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Build artifacts
+coverage/
+*.tsbuildinfo
+.cache/
+
+# Mobile project secrets
+mobile/.env
+mobile/android/local.properties
+mobile/android/app/build/
+mobile/android/build/
+mobile/*.jks
+mobile/dist/

@@ -58,7 +58,7 @@ export default function Groups() {
     setNotifications((prev) => prev.filter((x) => x.id !== n.id))
     await markNotificationRead(user.uid, n.id).catch(console.error)
     notifyBadge()
-    navigate(`/groups/${n.groupId}/split/${n.splitId}`)
+    navigate(n.type === "group_added" ? `/groups/${n.groupId}` : `/groups/${n.groupId}/split/${n.splitId}`)
   }
 
   const clearNotifications = async () => {
@@ -116,12 +116,20 @@ export default function Groups() {
                 className="flex items-center gap-3 py-2.5 cursor-pointer hover:bg-ink/5 -mx-2 px-2 rounded-md transition-colors"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-ink truncate">
-                    <span className="font-medium">{n.payerName}</span> added you to a split at <span className="font-medium">{n.merchant}</span>
-                  </p>
-                  <p className="text-xs text-news truncate">{n.groupName}</p>
+                  {n.type === "group_added" ? (
+                    <p className="text-sm text-ink truncate">
+                      <span className="font-medium">{n.addedByName || "Someone"}</span> added you to <span className="font-medium">{n.groupName || "a group"}</span>
+                    </p>
+                  ) : (
+                    <p className="text-sm text-ink truncate">
+                      <span className="font-medium">{n.payerName}</span> added you to a split at <span className="font-medium">{n.merchant}</span>
+                    </p>
+                  )}
+                  <p className="text-xs text-news truncate">{n.type === "group_added" ? "New group" : n.groupName}</p>
                 </div>
-                <p className="text-sm font-mono text-ink shrink-0">{currencySymbol}{Number(n.amount).toFixed(2)}</p>
+                {n.type !== "group_added" && (
+                  <p className="text-sm font-mono text-ink shrink-0">{currencySymbol}{Number(n.amount).toFixed(2)}</p>
+                )}
               </div>
             ))}
           </CardContent>

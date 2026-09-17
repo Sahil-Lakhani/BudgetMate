@@ -52,10 +52,15 @@ export const GroupMemberSchema = z.object({
   photoURL: z.string().default('')
 });
 
+export const GROUP_MEMBER_LIMIT = 20;
+
 export const GroupSchema = z.object({
   name: z.string().trim().min(1, 'Group name is required').max(60, 'Group name is too long'),
-  members: z.array(GroupMemberSchema).min(1, 'At least one member is required').max(20, 'Groups are limited to 20 members')
-});
+  members: z.array(GroupMemberSchema).min(1, 'At least one member is required').max(GROUP_MEMBER_LIMIT, `Groups are limited to ${GROUP_MEMBER_LIMIT} members`)
+}).refine(
+  (g) => new Set(g.members.map((m) => m.userId)).size === g.members.length,
+  { message: 'A member can only be added once', path: ['members'] }
+);
 
 export const SplitParticipantSchema = z.object({
   userId: z.string().min(1, 'Participant userId is required'),
@@ -82,15 +87,24 @@ export const SplitSchema = z.object({
     { message: 'Payer must be a participant', path: ['payerId'] }
   );
 
-export const NotificationSchema = z.object({
-  type: z.literal('split_added'),
-  splitId: z.string().min(1),
-  groupId: z.string().min(1),
-  groupName: z.string().default(''),
-  payerName: z.string().default(''),
-  merchant: z.string().default(''),
-  amount: z.coerce.number().nonnegative()
-});
+// In-app only. Each variant's keys must match the `hasOnly` list in firestore.rules.
+export const NotificationSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('split_added'),
+    splitId: z.string().min(1),
+    groupId: z.string().min(1),
+    groupName: z.string().default(''),
+    payerName: z.string().default(''),
+    merchant: z.string().default(''),
+    amount: z.coerce.number().nonnegative()
+  }),
+  z.object({
+    type: z.literal('group_added'),
+    groupId: z.string().min(1),
+    groupName: z.string().default(''),
+    addedByName: z.string().default('')
+  })
+]);
 
 // Validation helper functions
 export function validateReceipt(data) {
@@ -107,6 +121,10 @@ export function validateUserSettings(data) {
 
 export function validateGroup(data) {
   return GroupSchema.parse(data);
+}
+
+export function validateGroupMember(data) {
+  return GroupMemberSchema.parse(data);
 }
 
 export function validateSplit(data) {

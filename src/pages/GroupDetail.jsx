@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
-import { getGroup, subscribeGroupSplits, leaveGroup, deleteGroup } from "../lib/firestore"
+import { getGroup, subscribeGroupSplits, leaveGroup, deleteGroup, addMemberToGroup, createNotification, GROUP_ERRORS } from "../lib/firestore"
+import { GROUP_MEMBER_LIMIT } from "../lib/validation"
 import { computeBalances } from "../lib/balances"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/Card"
 import { Button } from "../components/Button"
-import { Plus, Loader2, ArrowLeft, Users, LogOut, Trash2 } from "lucide-react"
+import { UserSearch } from "../components/UserSearch"
+import { Plus, Loader2, ArrowLeft, Users, LogOut, Trash2, UserPlus, X } from "lucide-react"
 import { usePageTitle } from "../lib/usePageTitle"
 import { useCurrency } from "../context/CurrencyContext"
 import { getCurrencySymbol } from "../lib/currency"
@@ -24,6 +26,9 @@ export default function GroupDetail() {
   const [confirming, setConfirming] = useState(null) // null | "leave" | "delete"
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
+  const [adding, setAdding] = useState(false)       // search panel open
+  const [addingId, setAddingId] = useState(null)    // member write in flight
+  const [addError, setAddError] = useState("")
 
   useEffect(() => {
     if (!groupId) return
@@ -38,6 +43,36 @@ export default function GroupDetail() {
   const unsettledCount = splits.filter((s) => s.participants.some((p) => p.status !== "settled")).length
 
   const memberName = (uid) => group?.members.find((m) => m.userId === uid)?.displayName || balances.byMember[uid]?.displayName || "Member"
+  const isFull = (group?.memberIds?.length ?? 0) >= GROUP_MEMBER_LIMIT
+
+  const handleAddMember = async (u) => {
+    if (addingId) return
+    setAddingId(u.userId); setAddError("")
+    try {
+      const members = await addMemberToGroup(groupId, {
+        userId: u.userId,
+        displayName: u.displayName || "",
+        email: u.email || "",
+        photoURL: u.photoURL || ""
+      })
+      setGroup((g) => ({ ...g, members, memberIds: members.map((m) => m.userId) }))
+
+      // Best-effort, after the add has landed (rules check the recipient is already a member).
+      // A failed notification must never read as a failed add.
+      createNotification(u.userId, {
+        type: "group_added",
+        groupId,
+        groupName: group.name,
+        addedByName: user.displayName || user.email || ""
+      }).catch((e) => console.warn("Notification not sent:", e))
+    } catch (e) {
+      console.error(e)
+      const known = Object.values(GROUP_ERRORS).includes(e?.message)
+      setAddError(known ? e.message : "Couldn't add that member. Try again.")
+    } finally {
+      setAddingId(null)
+    }
+  }
 
   const handleLeave = async () => {
     setBusy(true); setError("")
@@ -112,8 +147,31 @@ export default function GroupDetail() {
 
       {/* Members */}
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><Users className="h-4 w-4" /> Members</CardTitle></CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle className="flex items-center gap-2"><Users className="h-4 w-4" /> Members <span className="text-news font-normal text-sm">({group.members.length}/{GROUP_MEMBER_LIMIT})</span></CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5"
+            disabled={!adding && isFull}
+            title={isFull ? GROUP_ERRORS.full : undefined}
+            onClick={() => { setAdding((v) => !v); setAddError("") }}
+          >
+            {adding ? <><X className="h-4 w-4" /> Done</> : <><UserPlus className="h-4 w-4" /> Add member</>}
+          </Button>
+        </CardHeader>
         <CardContent className="divide-y divide-border">
+          {adding && (
+            <div className="pb-3 space-y-2">
+              {isFull
+                ? <p className="text-sm text-news">{GROUP_ERRORS.full}.</p>
+                : <UserSearch addedIds={group.memberIds} onAdd={handleAddMember} />
+              }
+              {addingId && <p className="text-xs text-news flex items-center gap-1.5"><Loader2 className="h-3 w-3 animate-spin" /> Adding…</p>}
+              {addError && <p className="text-sm text-red-500">{addError}</p>}
+              <p className="text-xs text-news">New members see this group's splits but aren't part of splits made before they joined.</p>
+            </div>
+          )}
           {group.members.map((m) => (
             <div key={m.userId} className="flex items-center gap-3 py-2.5">
               {m.photoURL

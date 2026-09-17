@@ -1,6 +1,6 @@
 import { db } from "./firebase"
-import { collection, getDocs, query, addDoc, doc, setDoc, getDoc, deleteDoc, where, limit, onSnapshot, writeBatch } from "firebase/firestore"
-import { validateTransaction, validateUserSettings, validateGroup, validateSplit, validateNotification } from "./validation"
+import { collection, getDocs, query, addDoc, doc, setDoc, getDoc, deleteDoc, where, limit, onSnapshot, writeBatch, runTransaction } from "firebase/firestore"
+import { validateTransaction, validateUserSettings, validateGroup, validateGroupMember, validateSplit, validateNotification, GROUP_MEMBER_LIMIT } from "./validation"
 import { checkRateLimit } from "./rateLimit"
 
 export const getUserTransactions = async (userId) => {
@@ -203,19 +203,36 @@ export const getGroup = async (groupId) => {
   }
 }
 
+// Errors thrown with these messages are safe to show verbatim.
+export const GROUP_ERRORS = {
+  notFound: "Group not found",
+  alreadyMember: "Already a member of this group",
+  full: `Groups are limited to ${GROUP_MEMBER_LIMIT} members`
+}
+
+// Adds `member` to the roster. A transaction, so two people adding at once cannot
+// overwrite each other's add. Resolves with the fresh members list.
 export const addMemberToGroup = async (groupId, member) => {
   try {
+    checkRateLimit('firestore-write');
+    const validated = validateGroupMember(member)
     const groupRef = doc(db, "groups", groupId)
-    const snap = await getDoc(groupRef)
-    if (!snap.exists()) throw new Error("Group not found")
 
-    const { members = [], memberIds = [] } = snap.data()
-    if (memberIds.includes(member.userId)) return
+    return await runTransaction(db, async (tx) => {
+      const snap = await tx.get(groupRef)
+      if (!snap.exists()) throw new Error(GROUP_ERRORS.notFound)
 
-    await setDoc(groupRef, {
-      members: [...members, member],
-      memberIds: [...memberIds, member.userId]
-    }, { merge: true })
+      const { members = [], memberIds = [] } = snap.data()
+      if (memberIds.includes(validated.userId)) throw new Error(GROUP_ERRORS.alreadyMember)
+      if (memberIds.length >= GROUP_MEMBER_LIMIT) throw new Error(GROUP_ERRORS.full)
+
+      const nextMembers = [...members, validated]
+      tx.update(groupRef, {
+        members: nextMembers,
+        memberIds: [...memberIds, validated.userId]
+      })
+      return nextMembers
+    })
   } catch (error) {
     console.error("Error adding member to group:", error)
     throw error
@@ -467,7 +484,8 @@ export const searchUsersByName = async (name) => {
 // Dispatched on window after notifications are marked read so the nav badge re-counts
 export const NOTIFICATIONS_CHANGED_EVENT = "budgetmate:notifications-changed"
 
-// Not rate-limited: fanned out once per participant right after createSplit
+// Not rate-limited: fanned out once per participant right after createSplit / addMemberToGroup.
+// In-app only — there is no push or email behind this.
 export const createNotification = async (userId, notifData) => {
   try {
     const validated = validateNotification(notifData)

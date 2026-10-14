@@ -34,7 +34,6 @@ export default function Dashboard() {
     highestCategory: { name: "N/A", value: 0 },
     dailyAverage: 0,
     income: 0,
-    savingsGoal: 0,
     savingsAmount: 0,
     spendableAmount: 0,
     remainingSpendable: 0
@@ -130,19 +129,13 @@ export default function Dashboard() {
     const daysPassed = now.getDate()
     const dailyAverage = daysPassed > 0 ? monthlyTotal / daysPassed : 0
 
-    let income = 0, savingsGoal = 0, savingsAmount = 0, spendableAmount = 0, remainingSpendable = 0
+    let income = 0, savingsAmount = 0, spendableAmount = 0, remainingSpendable = 0
 
     if (settings && settings.income) {
       income = parseFloat(settings.income)
       const savingsValue = parseFloat(settings.savingsValue || 0)
 
-      if (settings.savingsType === 'percentage') {
-        savingsAmount = (income * savingsValue) / 100
-        savingsGoal = savingsValue
-      } else {
-        savingsAmount = savingsValue
-        savingsGoal = savingsValue
-      }
+      savingsAmount = settings.savingsType === 'percentage' ? (income * savingsValue) / 100 : savingsValue
 
       spendableAmount = income - savingsAmount
       remainingSpendable = spendableAmount - monthlyTotal

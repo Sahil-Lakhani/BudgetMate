@@ -7,7 +7,7 @@ export function SplitRow({ participant, amount, isActive, onToggle, onAmountChan
       !isActive && "opacity-40"
     )}>
       {participant.photoURL ? (
-        <img src={participant.photoURL} alt={participant.displayName} className="w-9 h-9 rounded-full shrink-0" />
+        <img src={participant.photoURL} referrerPolicy="no-referrer" loading="lazy" alt={participant.displayName} className="w-9 h-9 rounded-full shrink-0" />
       ) : (
         <div className="w-9 h-9 rounded-full bg-ink/10 flex items-center justify-center text-sm font-bold text-ink shrink-0">
           {(participant.displayName || participant.email || "?")[0].toUpperCase()}
@@ -28,15 +28,19 @@ export function SplitRow({ participant, amount, isActive, onToggle, onAmountChan
             step="0.01"
             value={isActive ? amount : ""}
             disabled={!isActive}
+            inputMode="decimal"
+            aria-label={`Share for ${participant.displayName || participant.email || "member"}`}
             onChange={(e) => onAmountChange(parseFloat(e.target.value) || 0)}
             className="w-24 pl-5 pr-2 py-1.5 text-sm border border-border rounded-md bg-paper text-ink disabled:bg-news-light disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-ink"
           />
         </div>
 
         <button
+          type="button"
           onClick={onToggle}
           disabled={isActive && isLastActive}
           title={isActive ? "Remove from split" : "Add to split"}
+          aria-label={`${isActive ? "Remove" : "Add"} ${participant.displayName || "participant"} ${isActive ? "from" : "to"} split`}
           className={cn(
             "w-6 h-6 rounded border-2 flex items-center justify-center transition-colors",
             isActive

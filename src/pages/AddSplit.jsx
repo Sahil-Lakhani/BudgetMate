@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { localDate } from "../lib/utils"
 import { useNavigate, useParams } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/Card"
 import { Button } from "../components/Button"
@@ -18,7 +19,7 @@ export default function AddSplit() {
   const [mode, setMode] = useState(null) // null | "manual"
   const [merchant, setMerchant] = useState("")
   const [amount, setAmount] = useState("")
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
+  const [date, setDate] = useState(localDate())
   const [error, setError] = useState("")
 
   const handleScan = () => {
@@ -29,6 +30,7 @@ export default function AddSplit() {
     if (!merchant.trim()) { setError("Merchant name is required"); return }
     const total = parseFloat(amount)
     if (!total || total <= 0) { setError("Enter a valid amount"); return }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { setError("Choose a date"); return }
     navigate(`/groups/${groupId}/split/new/screen`, {
       state: { merchant: merchant.trim(), totalAmount: total, date, fromManual: true }
     })
@@ -66,18 +68,18 @@ export default function AddSplit() {
           <CardHeader><CardTitle>Bill Details</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-ink block mb-1">Merchant</label>
-              <Input placeholder="e.g. Pizza Palace" value={merchant} onChange={(e) => setMerchant(e.target.value)} />
+              <label htmlFor="split-merchant" className="text-sm font-medium text-ink block mb-1">Merchant</label>
+              <Input id="split-merchant" maxLength={100} placeholder="e.g. Pizza Palace" value={merchant} onChange={(e) => setMerchant(e.target.value)} />
             </div>
             <div>
-              <label className="text-sm font-medium text-ink block mb-1">Total Amount ({currencySymbol})</label>
-              <Input type="number" min="0" step="0.01" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
+              <label htmlFor="split-amount" className="text-sm font-medium text-ink block mb-1">Total Amount ({currencySymbol})</label>
+              <Input id="split-amount" inputMode="decimal" type="number" min="0" step="0.01" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
             </div>
             <div>
-              <label className="text-sm font-medium text-ink block mb-1">Date</label>
-              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+              <label htmlFor="split-date" className="text-sm font-medium text-ink block mb-1">Date</label>
+              <Input id="split-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
-            {error && <p className="text-sm text-red-500">{error}</p>}
+            {error && <p role="alert" className="text-sm text-red-500">{error}</p>}
             <div className="flex gap-3 pt-2">
               <Button variant="outline" onClick={() => setMode(null)} className="flex-1">Back</Button>
               <Button onClick={handleManualContinue} className="flex-1">Continue</Button>

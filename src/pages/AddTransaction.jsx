@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { localDate } from "../lib/utils"
 import { useNavigate } from "react-router-dom"
 import { ArrowLeft, Plus, Trash2 } from "lucide-react"
 import { Button } from "../components/Button"
@@ -30,9 +31,10 @@ export default function AddTransaction() {
 	const { currency } = useCurrency()
 	const currencySymbol = getCurrencySymbol(currency)
 	const [saving, setSaving] = useState(false)
+	const [formError, setFormError] = useState("")
 
 	// Get today's date in YYYY-MM-DD format
-	const today = new Date().toISOString().split('T')[0]
+	const today = localDate()
 
 	const [formData, setFormData] = useState({
 		merchant: "",
@@ -102,21 +104,29 @@ export default function AddTransaction() {
 
 		// Validation
 		if (!formData.merchant.trim()) {
-			alert("Please enter a merchant name")
+			setFormError("Please enter a merchant name.")
 			return
 		}
 
 		if (!formData.date) {
-			alert("Please select a date")
+			setFormError("Please select a date.")
 			return
 		}
 
 		// Check if at least one line item has a name
 		const hasValidLineItem = formData.lineItems.some(item => item.name.trim())
 		if (!hasValidLineItem) {
-			alert("Please add at least one item")
+			setFormError("Please add at least one item with a name.")
 			return
 		}
+
+		const badNumber = formData.lineItems.some(item => item.name.trim() &&
+			((parseFloat(item.price) || 0) < 0 || (item.quantity !== "" && !(parseFloat(item.quantity) > 0))))
+		if (badNumber) {
+			setFormError("Prices can't be negative and quantities must be greater than zero.")
+			return
+		}
+		setFormError("")
 
 		setSaving(true)
 
@@ -145,7 +155,7 @@ export default function AddTransaction() {
 			navigate("/expenses")
 		} catch (error) {
 			console.error("Error saving transaction:", error)
-			alert(`Failed to save transaction: ${error.message}`)
+			setFormError(error.userFacing ? error.message : "Failed to save the transaction. Please check the fields and try again.")
 		} finally {
 			setSaving(false)
 		}
@@ -154,13 +164,13 @@ export default function AddTransaction() {
 	return (
 		<div className="max-w-3xl mx-auto space-y-6">
 			<div className="flex items-center gap-4">
-				<Button variant="ghost" size="icon" onClick={() => navigate("/expenses")}>
-					<ArrowLeft className="h-5 w-5 text-ink" />
+				<Button variant="ghost" size="icon" onClick={() => navigate("/expenses")} aria-label="Back to expenses">
+					<ArrowLeft className="h-5 w-5 text-ink" aria-hidden="true" />
 				</Button>
-				<h2 className="text-2xl font-sans font-bold text-ink">Add Transaction</h2>
+				<h1 className="text-2xl font-sans font-bold text-ink">Add Transaction</h1>
 			</div>
 
-			<form onSubmit={handleSubmit}>
+			<form onSubmit={handleSubmit} noValidate>
 				<Card>
 					<CardContent className="p-6 space-y-6">
 						{/* Basic Information */}
@@ -169,24 +179,27 @@ export default function AddTransaction() {
 
 							<div className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
 								<div className="space-y-2 col-span-2 lg:col-span-1">
-									<label className="text-sm font-medium text-ink">
-										Merchant Name <span className="text-red-500">*</span>
+									<label htmlFor="tx-merchant" className="text-sm font-medium text-ink">
+										Merchant Name <span className="text-red-500" aria-hidden="true">*</span>
 									</label>
 									<Input
+										id="tx-merchant"
 										name="merchant"
+										maxLength={100}
 										value={formData.merchant}
 										onChange={handleInputChange}
-										placeholder="e.g., Walmart, Starbucks"
+										placeholder="e.g. REWE, Lidl"
 										className="rounded-[8px]"
 										required
 									/>
 								</div>
 
 								<div className="space-y-2">
-									<label className="text-sm font-medium text-ink">
-										Date <span className="text-red-500">*</span>
+									<label htmlFor="tx-date" className="text-sm font-medium text-ink">
+										Date <span className="text-red-500" aria-hidden="true">*</span>
 									</label>
 									<Input
+										id="tx-date"
 										type="date"
 										name="date"
 										value={formData.date}
@@ -197,12 +210,14 @@ export default function AddTransaction() {
 								</div>
 
 								<div className="space-y-2">
-									<label className="text-sm font-medium text-ink">Location</label>
+									<label htmlFor="tx-location" className="text-sm font-medium text-ink">Location</label>
 									<Input
+										id="tx-location"
 										name="location"
+										maxLength={100}
 										value={formData.location}
 										onChange={handleInputChange}
-										placeholder="e.g., New York, NY"
+										placeholder="e.g. Berlin"
 										className="rounded-[8px]"
 									/>
 								</div>
@@ -236,6 +251,7 @@ export default function AddTransaction() {
 													variant="ghost"
 													size="icon"
 													onClick={() => removeLineItem(index)}
+													aria-label={`Remove item ${index + 1}`}
 													className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-100"
 												>
 													<Trash2 className="h-4 w-4" />
@@ -245,8 +261,10 @@ export default function AddTransaction() {
 
 										<div className="grid grid-cols-2 gap-3">
 											<div className="space-y-1">
-												<label className="text-xs font-medium text-news">Item Name</label>
+												<label htmlFor={`item-${index}-name`} className="text-xs font-medium text-news">Item Name</label>
 												<Input
+													id={`item-${index}-name`}
+													maxLength={100}
 													value={item.name}
 													onChange={(e) => handleLineItemChange(index, "name", e.target.value)}
 													placeholder="e.g., Milk, Bread"
@@ -255,8 +273,9 @@ export default function AddTransaction() {
 											</div>
 
 											<div className="space-y-2">
-												<label className="text-xs font-medium text-news">Category</label>
+												<label htmlFor={`item-${index}-category`} className="text-xs font-medium text-news">Category</label>
 												<Select
+													id={`item-${index}-category`}
 													value={item.category}
 													onChange={(e) => handleLineItemChange(index, "category", e.target.value)}
 													options={CATEGORIES.map(cat => ({ value: cat, label: cat }))}
@@ -264,8 +283,10 @@ export default function AddTransaction() {
 											</div>
 
 											<div className="space-y-2">
-												<label className="text-xs font-medium text-news">Quantity</label>
+												<label htmlFor={`item-${index}-qty`} className="text-xs font-medium text-news">Quantity</label>
 												<Input
+													id={`item-${index}-qty`}
+													inputMode="numeric"
 													type="number"
 													min="1"
 													step="1"
@@ -276,8 +297,10 @@ export default function AddTransaction() {
 											</div>
 
 											<div className="space-y-2">
-												<label className="text-xs font-medium text-news">Price ({currencySymbol})</label>
+												<label htmlFor={`item-${index}-price`} className="text-xs font-medium text-news">Price ({currencySymbol})</label>
 												<Input
+													id={`item-${index}-price`}
+													inputMode="decimal"
 													type="number"
 													min="0"
 													step="0.01"
@@ -306,6 +329,8 @@ export default function AddTransaction() {
 								<span className="text-2xl font-bold text-ink">{currencySymbol}{calculateTotal().toFixed(2)}</span>
 							</div>
 						</div>
+
+						{formError && <p role="alert" className="text-sm text-red-500">{formError}</p>}
 
 						{/* Action Buttons */}
 						<div className="flex gap-3 pt-4">

@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { GROUP_MEMBER_LIMIT } from "../lib/validation"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
 import { createGroup } from "../lib/firestore"
@@ -31,6 +32,7 @@ export default function CreateGroup() {
 
   const handleCreate = async () => {
     if (!name.trim()) { setError("Group name is required"); return }
+    if (members.length + 1 > GROUP_MEMBER_LIMIT) { setError(`Groups are limited to ${GROUP_MEMBER_LIMIT} members, including you.`); return }
     setSaving(true)
     setError("")
     try {
@@ -59,8 +61,10 @@ export default function CreateGroup() {
         <CardHeader><CardTitle>Group Details</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-ink block mb-1">Group Name</label>
+            <label htmlFor="group-name" className="text-sm font-medium text-ink block mb-1">Group Name</label>
             <Input
+              id="group-name"
+              maxLength={60}
               placeholder="e.g. Roommates, Bali Trip"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -68,15 +72,19 @@ export default function CreateGroup() {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-ink block mb-2">Add Members</label>
+            <p className="text-sm font-medium text-ink block mb-2">Add Members</p>
             <UserSearch addedIds={addedIds} onAdd={handleAdd} />
+            <p className="text-xs text-news mt-2">
+              Only people who already have a BudgetMate account can be found. Members see the group name, each
+              other's name, email and photo, and all splits in the group. Only add people who agreed to it.
+            </p>
           </div>
 
           <div className="space-y-2">
             <p className="text-xs text-news uppercase tracking-wider">Members ({members.length + 1})</p>
             <div key={user.uid} className="flex items-center gap-3 py-2 border-b border-border">
               {user.photoURL
-                ? <img src={user.photoURL} alt={user.displayName} className="w-8 h-8 rounded-full" />
+                ? <img src={user.photoURL} referrerPolicy="no-referrer" loading="lazy" alt={user.displayName} className="w-8 h-8 rounded-full" />
                 : <div className="w-8 h-8 rounded-full bg-ink/10 flex items-center justify-center text-xs font-bold">{(user.displayName || user.email)[0].toUpperCase()}</div>
               }
               <div className="flex-1 min-w-0">
@@ -87,14 +95,14 @@ export default function CreateGroup() {
             {members.map((m) => (
               <div key={m.userId} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
                 {m.photoURL
-                  ? <img src={m.photoURL} alt={m.displayName} className="w-8 h-8 rounded-full" />
+                  ? <img src={m.photoURL} referrerPolicy="no-referrer" loading="lazy" alt={m.displayName} className="w-8 h-8 rounded-full" />
                   : <div className="w-8 h-8 rounded-full bg-ink/10 flex items-center justify-center text-xs font-bold">{(m.displayName || m.email)[0].toUpperCase()}</div>
                 }
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-ink truncate">{m.displayName}</p>
                   <p className="text-xs text-news truncate">{m.email}</p>
                 </div>
-                <button onClick={() => handleRemove(m.userId)} className="text-news hover:text-red-500 transition-colors">
+                <button type="button" onClick={() => handleRemove(m.userId)} aria-label={`Remove ${m.displayName || "member"}`} className="p-2 -m-2 text-news hover:text-red-500 transition-colors">
                   <X className="h-4 w-4" />
                 </button>
               </div>

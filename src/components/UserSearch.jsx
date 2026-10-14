@@ -12,6 +12,7 @@ export function UserSearch({ addedIds = [], onAdd }) {
   const [searchResults, setSearchResults] = useState([])
   const [loading, setLoading] = useState(false)
   const debounceRef = useRef(null)
+  const latestRequest = useRef(0)
 
   // Never offer the current user, and skip profiles with nothing to show
   const visible = useCallback(
@@ -20,21 +21,25 @@ export function UserSearch({ addedIds = [], onAdd }) {
   )
 
   const search = useCallback(async (value) => {
+    const requestId = ++latestRequest.current
     setLoading(true)
     try {
+      const term = value.trim()
       const [byEmail, byName] = await Promise.all([
-        searchUsersByEmail(value),
-        searchUsersByName(value)
+        // Stored emails are lowercase; names are matched as a case-sensitive prefix
+        searchUsersByEmail(term.toLowerCase()),
+        searchUsersByName(term)
       ])
+      if (requestId !== latestRequest.current) return // a newer search superseded this one
       const merged = [...byEmail, ...byName]
       const deduped = merged.filter(
         (u, i, arr) => arr.findIndex((x) => x.userId === u.userId) === i
       )
       setSearchResults(visible(deduped))
     } catch {
-      setSearchResults([])
+      if (requestId === latestRequest.current) setSearchResults([])
     } finally {
-      setLoading(false)
+      if (requestId === latestRequest.current) setLoading(false)
     }
   }, [visible])
 
@@ -55,6 +60,9 @@ export function UserSearch({ addedIds = [], onAdd }) {
     <div className="space-y-2">
       <div className="relative">
         <Input
+          aria-label="Search people by name or email"
+          type="search"
+          maxLength={100}
           placeholder="Search by name or email…"
           value={query}
           onChange={handleChange}
@@ -80,7 +88,7 @@ export function UserSearch({ addedIds = [], onAdd }) {
                 ].join(" ")}
               >
                 {u.photoURL ? (
-                  <img src={u.photoURL} alt={u.displayName} className="w-8 h-8 rounded-full shrink-0" />
+                  <img src={u.photoURL} referrerPolicy="no-referrer" loading="lazy" alt={u.displayName} className="w-8 h-8 rounded-full shrink-0" />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-ink/10 flex items-center justify-center text-xs font-bold text-ink shrink-0">
                     {(u.displayName || u.email || "?")[0].toUpperCase()}

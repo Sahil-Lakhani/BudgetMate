@@ -1,14 +1,19 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from './Card';
 import { Lightbulb, TrendingUp, TrendingDown, ShoppingBag, Sparkles, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
-// import { useTheme } from '../context/ThemeContext';
 import { useCurrency } from '../context/CurrencyContext';
+import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../lib/currency';
 import { generateMonthlyInsights } from '../lib/gemini';
+import { getUserSettings } from '../lib/firestore';
+import { insightsCacheKey } from '../lib/localData';
+import { localMonth } from '../lib/utils';
 
 export default function Insights({ transactions }) {
-	// const { theme } = useTheme();
 	const { currency } = useCurrency();
+	const { user } = useAuth();
+	// AI insights send spending data to Google Gemini — only after the user opts in (Settings)
+	const [aiEnabled, setAiEnabled] = useState(false);
 	const [aiInsights, setAiInsights] = useState([]);
 	const [loadingAI, setLoadingAI] = useState(false);
 	const [currentSlide, setCurrentSlide] = useState(0);
@@ -19,9 +24,9 @@ export default function Insights({ transactions }) {
 
 		const tips = [];
 		const now = new Date();
-		const currentMonth = now.toISOString().slice(0, 7); // YYYY-MM
+		const currentMonth = localMonth(now); // YYYY-MM
 		const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-		const lastMonth = lastMonthDate.toISOString().slice(0, 7); // YYYY-MM
+		const lastMonth = localMonth(lastMonthDate); // YYYY-MM
 
 		// 1. Flatten items
 		const allItems = [];
@@ -93,10 +98,6 @@ export default function Insights({ transactions }) {
 			}
 		});
 
-		if (previousMonthTransactions.length > 0) {
-			// console.log("Previous Month Data JSON:", JSON.stringify(previousMonthTransactions, null, 2));
-		}
-
 		if (currentMonthTotal > 0 && lastMonthTotal > 0) {
 			const diff = currentMonthTotal - lastMonthTotal;
 			const percent = ((diff / lastMonthTotal) * 100).toFixed(1);
@@ -163,13 +164,20 @@ export default function Insights({ transactions }) {
 	}, [transactions, currency]);
 
 
+	useEffect(() => {
+		if (!user?.uid) return;
+		getUserSettings(user.uid)
+			.then((settings) => setAiEnabled(Boolean(settings?.aiInsights)))
+			.catch(() => setAiEnabled(false));
+	}, [user]);
+
 	// AI Insights Logic
 	useEffect(() => {
 		const fetchAIInsights = async () => {
-			if (!transactions || transactions.length === 0) return;
+			if (!aiEnabled || !user?.uid || !transactions || transactions.length === 0) return;
 
 			const now = new Date();
-			const currentMonthKey = `insights_${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+			const currentMonthKey = insightsCacheKey(user.uid, `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
 
 			// Check cache
 			const cached = localStorage.getItem(currentMonthKey);
@@ -185,15 +193,15 @@ export default function Insights({ transactions }) {
 
 			// Prepare data for previous month
 			const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-			const lastMonth = lastMonthDate.toISOString().slice(0, 7); // YYYY-MM
+			const lastMonth = localMonth(lastMonthDate); // YYYY-MM
 
-			const previousMonthTransactions = transactions.filter(t => t.date.startsWith(lastMonth));
+			const previousMonthTransactions = transactions.filter(t => t.date.startsWith(lastMonth) && t.type !== 'refund');
 
 			if (previousMonthTransactions.length < 5) return;
 
 			setLoadingAI(true);
 			try {
-				const result = await generateMonthlyInsights(previousMonthTransactions);
+				const result = await generateMonthlyInsights(previousMonthTransactions, currency);
 				if (result && result.suggestions) {
 					setAiInsights(result.suggestions);
 					localStorage.setItem(currentMonthKey, JSON.stringify(result.suggestions));
@@ -206,7 +214,7 @@ export default function Insights({ transactions }) {
 		};
 
 		fetchAIInsights();
-	}, [transactions]);
+	}, [transactions, aiEnabled, user, currency]);
 
 	// Combine all slides
 	const allSlides = useMemo(() => {
@@ -291,6 +299,7 @@ export default function Insights({ transactions }) {
 											Action: {currentItem.action}
 										</span>
 									</div>
+									<p className="text-[11px] text-news mt-2">AI-generated suggestion — may be inaccurate. Not financial advice.</p>
 								</div>
 							</div>
 						</div>

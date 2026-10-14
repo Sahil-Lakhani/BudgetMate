@@ -6,34 +6,37 @@
 
     <!-- Primary meta -->
     <title>BudgetMate — Personal Finance Tracker</title>
-    <meta name="description" content="Track expenses, scan receipts with AI, and see where your money goes — all in one place. Free personal finance PWA." />
-    <meta name="theme-color" content="#1A1A1A" />
+    <meta name="description" content="Track expenses, scan receipts with AI, split bills with friends and see where your money goes." />
+    <meta name="theme-color" content="#18181B" />
     <meta name="color-scheme" content="light dark" />
 
-    <!-- Canonical & robots -->
-    <link rel="canonical" href="https://budgetmate.vercel.app/" />
+    <!-- Canonical & social: __SITE_URL__ is filled from VITE_SITE_URL at build (vite.config.js) -->
+    <link rel="canonical" href="__SITE_URL__/" />
     <meta name="robots" content="index, follow" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://budgetmate.vercel.app/" />
+    <meta property="og:url" content="__SITE_URL__/" />
     <meta property="og:title" content="BudgetMate — Personal Finance Tracker" />
-    <meta property="og:description" content="Track expenses, scan receipts with AI, and see where your money goes — all in one place." />
-    <meta property="og:image" content="https://budgetmate.vercel.app/og-image.png" />
+    <meta property="og:description" content="Track expenses, scan receipts with AI, split bills with friends and see where your money goes." />
+    <meta property="og:image" content="__SITE_URL__/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="BudgetMate — Track expenses, scan receipts and split bills with friends" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:site_name" content="BudgetMate" />
 
     <!-- Twitter / X Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="BudgetMate — Personal Finance Tracker" />
-    <meta name="twitter:description" content="Track expenses, scan receipts with AI, and see where your money goes." />
-    <meta name="twitter:image" content="https://budgetmate.vercel.app/og-image.png" />
+    <meta name="twitter:description" content="Track expenses, scan receipts with AI, split bills with friends and see where your money goes." />
+    <meta name="twitter:image" content="__SITE_URL__/og-image.png" />
 
     <!-- PWA / Icons -->
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="apple-touch-icon" href="/favicon.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -46,25 +49,21 @@
       "@context": "https://schema.org",
       "@type": "WebApplication",
       "name": "BudgetMate",
-      "description": "Personal finance PWA for tracking expenses, scanning receipts with AI, and visualising spending.",
-      "url": "https://budgetmate.vercel.app/",
+      "description": "Personal finance web app for tracking expenses, scanning receipts with AI, splitting bills and visualising spending.",
+      "url": "__SITE_URL__/",
       "applicationCategory": "FinanceApplication",
       "operatingSystem": "Any",
       "browserRequirements": "Requires JavaScript",
       "offers": {
         "@type": "Offer",
         "price": "0",
-        "priceCurrency": "USD"
-      },
-      "author": {
-        "@type": "Person",
-        "name": "Sahil Lakhani",
-        "url": "https://github.com/Sahil-Lakhani"
+        "priceCurrency": "EUR"
       }
     }
     </script>
   </head>
   <body>
+    <noscript>BudgetMate needs JavaScript to run. Please enable it in your browser.</noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

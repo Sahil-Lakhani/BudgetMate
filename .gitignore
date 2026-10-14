@@ -54,3 +54,6 @@ mobile/android/app/build/
 mobile/android/build/
 mobile/*.jks
 mobile/dist/
+
+# Vercel
+.vercel

@@ -1,128 +1,79 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { checkRateLimit } from "./rateLimit";
+import { auth, getAppCheckToken } from "./firebase"
+import { checkRateLimit } from "./rateLimit"
 
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GOOGLE_API_KEY);
+// Gemini is called through our own endpoint (api/gemini.js) so the API key stays on the server.
+
+export const MAX_UPLOAD_BYTES = 15 * 1024 * 1024
+const MAX_EDGE = 1600
+
+// Errors carrying this flag have a message that is safe to show to the user
+export class UserFacingError extends Error {
+  constructor(message) { super(message); this.userFacing = true }
+}
+
+async function callGemini(payload) {
+  const user = auth.currentUser
+  if (!user) throw new UserFacingError("Your session has expired. Please sign in again.")
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    throw new UserFacingError("You appear to be offline. Check your connection and try again.")
+  }
+
+  const [token, appCheckToken] = await Promise.all([user.getIdToken(), getAppCheckToken()])
+  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+  if (appCheckToken) headers["X-Firebase-AppCheck"] = appCheckToken
+  let response
+  try {
+    response = await fetch("/api/gemini", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload)
+    })
+  } catch {
+    throw new UserFacingError("Couldn't reach the server. Check your connection and try again.")
+  }
+
+  const data = await response.json().catch(() => null)
+  if (!response.ok) {
+    throw new UserFacingError(data?.error || "Something went wrong. Please try again.")
+  }
+  return data
+}
+
+// Re-encode as JPEG, longest edge ≤ 1600px. Keeps uploads small and drops EXIF metadata (incl. GPS).
+async function prepareImage(file) {
+  if (!file.type.startsWith("image/")) throw new UserFacingError("Please choose an image file (JPG, PNG, WebP or HEIC).")
+  if (file.size > MAX_UPLOAD_BYTES) throw new UserFacingError("That image is larger than 15 MB. Please choose a smaller one.")
+
+  try {
+    const bitmap = await createImageBitmap(file)
+    const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height))
+    const canvas = document.createElement("canvas")
+    canvas.width = Math.round(bitmap.width * scale)
+    canvas.height = Math.round(bitmap.height * scale)
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+    bitmap.close?.()
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85)
+    return { data: dataUrl.split(",")[1], mimeType: "image/jpeg" }
+  } catch {
+    // Browser can't decode it (e.g. HEIC outside Safari): send as-is if small enough
+    if (file.size > 3 * 1024 * 1024) throw new UserFacingError("This image format can't be processed here. Please use a JPG or PNG.")
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result)
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+    return { data: dataUrl.split(",")[1], mimeType: file.type }
+  }
+}
 
 export async function analyzeReceipt(imageFile) {
-  try {
-    // Check rate limit before making API call
-    checkRateLimit('gemini-analyze');
-    
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-    // Convert file to base64
-    const base64Data = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(imageFile);
-      reader.onload = () => resolve(reader.result.split(',')[1]);
-      reader.onerror = error => reject(error);
-    });
-
-    const prompt = `Analyze this receipt image and extract the following information in JSON format:
-{
-  "merchant": "store/business name",
-  "location": "store/business location",
-  "total": "total amount spent (as a number)",
-  "date": "transaction date (YYYY-MM-DD format)",
-  "items": [
-    {
-      "name": "item name (translate to English ONLY if it is a real, concrete noun like fruits, vegetables, food items, or branded products; if the name is a generic category or department label, keep it as a generic English description)",
-      "unit_price": "item unit price (as a number)",
-	  "price": "item total price (as a number)",
-      "quantity": "quantity (as a number, default 1)",
-      "category": "category ("Groceries","Dining","Transport","Clothing","Household","Health","Entertainment", "Subscription","Other","Electronics"),
-    }
-  ]
+  checkRateLimit("gemini-analyze")
+  const image = await prepareImage(imageFile)
+  return callGemini({ action: "analyzeReceipt", image })
 }
 
-Rules:
-- Extract all items from the receipt
-- Date should be in YYYY-MM-DD format, IMPORTANT or use today's date if not found in the image receipt
-- Categorize each item appropriately ("groceries","dining","transport","clothing","household","health","entertainment", "subscription","other","electronics")
-- If category is unclear, use "Other"
-- Translate item names to English ONLY if they are real, concrete nouns (e.g., fruits, vegetables, food items, branded products); do NOT invent specific product names for generic department labels
-- Return ONLY valid JSON, no markdown, no code blocks, no explanations
-- All prices should be numbers (not strings with currency symbols)`;
-
-    const result = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          data: base64Data,
-          mimeType: imageFile.type,
-        },
-      },
-    ]);
-
-    const response = await result.response;
-    if (!response) throw new Error("No response from Gemini");
-    const text = response.text();
-    if (!text) throw new Error("Empty response from Gemini");
-
-    const jsonString = text.replace(/```(?:json)?\s*/gi, "").replace(/```/g, "").trim();
-    return JSON.parse(jsonString);
-  } catch (error) {
-    console.error("Error analyzing receipt:", error);
-    throw error;
-  }
-}
-
-export async function generateMonthlyInsights(transactions) {
-  try {
-    // Check rate limit before making API call
-    checkRateLimit('gemini-insights');
-    
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-    const prompt = `You are a personal finance assistant.
-
-Analyze the following previous month transaction data and generate exactly 3 to 4 highly specific, numerical, and actionable money-saving suggestions.
-
-Each suggestion MUST:
-- Be strictly based on the provided data (no assumptions)
-- Include real numbers from the data (prices, totals, differences, counts)
-- Include a clear action the user can take
-- Include a realistic estimated saving amount
-- Focus on:
-  • Price comparisons (same product across stores)
-  • Repeatedly bought items
-  • Category overspending
-  • Pfand (deposit) recovery
-  • Drink/snack cutbacks
-
-DO NOT:
-- Give generic advice
-- Repeat the same type of suggestion twice
-- Mention budgeting theory
-- Mention percentages without real euro amounts
-
-Return the result in the following JSON format:
-
-{
-  "suggestions": [
-    {
-      "title": "Short title (max 6 words)",
-      "insight": "What exactly happened based on the data make it short and to the point",
-      "action": "What the user should do",
-      "estimated_saving_per_month": "number in euros"
-    }
-  ]
-}
-
-Here is the previous month transaction data:
-${JSON.stringify(transactions)}
-`;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    if (!response) throw new Error("No response from Gemini");
-    const text = response.text();
-    if (!text) throw new Error("Empty response from Gemini");
-
-    const jsonString = text.replace(/```(?:json)?\s*/gi, "").replace(/```/g, "").trim();
-    return JSON.parse(jsonString);
-  } catch (error) {
-    console.error("Error generating monthly insights:", error);
-    throw error;
-  }
+export async function generateMonthlyInsights(transactions, currency = "EUR") {
+  checkRateLimit("gemini-insights")
+  return callGemini({ action: "monthlyInsights", transactions, currency })
 }

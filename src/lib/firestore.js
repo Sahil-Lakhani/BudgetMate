@@ -2,6 +2,7 @@ import { db } from "./firebase"
 import { collection, getDocs, query, addDoc, doc, setDoc, getDoc, deleteDoc, where, limit, onSnapshot, writeBatch, runTransaction } from "firebase/firestore"
 import { validateTransaction, validateUserSettings, validateGroup, validateGroupMember, validateSplit, validateNotification, GROUP_MEMBER_LIMIT } from "./validation"
 import { checkRateLimit } from "./rateLimit"
+import { localDate } from "./utils"
 
 export const getUserTransactions = async (userId) => {
   if (!userId) return []
@@ -298,10 +299,10 @@ export const createSplit = async (groupId, payerId, { merchant, date, totalAmoun
       createdAt: new Date().toISOString()
     }
 
-    const ref = await addDoc(collection(db, "splits"), splitData)
-
-    // The payer paid the whole bill: record it in their ledger
-    await createSplitTransaction(payerId, splitTxId(ref.id), {
+    // The split and the payer's ledger entry (they paid the whole bill) are written in one
+    // batch: either both exist or neither, so a failed save can be retried without duplicates.
+    const ref = doc(collection(db, "splits"))
+    const payerTx = validateTransaction({
       merchant: validated.merchant,
       date: validated.date,
       total: validated.totalAmount,
@@ -310,6 +311,10 @@ export const createSplit = async (groupId, payerId, { merchant, date, totalAmoun
       type: "expense",
       splitId: ref.id
     })
+    const batch = writeBatch(db)
+    batch.set(ref, splitData)
+    batch.set(doc(db, "users", payerId, "transactions", splitTxId(ref.id)), { ...payerTx, createdAt: new Date().toISOString() })
+    await batch.commit()
 
     return { splitId: ref.id, shareToken }
   } catch (error) {
@@ -374,44 +379,54 @@ export const settleSplit = async (splitId, userId) => {
     const split = snap.data()
     const share = split.participants.find((p) => p.userId === userId)
     if (!share) throw new Error("Not a participant of this split")
-    if (share.status !== "settled") {
-      const updated = split.participants.map((p) =>
-        p.userId === userId ? { ...p, status: "settled" } : p
-      )
-      await setDoc(splitRef, { participants: updated }, { merge: true })
-    }
 
-    // Payer settling their own share moves no money
-    if (userId === split.payerId) return
+    // Ledger entries are written BEFORE the status flips. They have fixed ids, so a retry
+    // after a partial failure just completes them; the reverse order could leave a share
+    // marked settled with no ledger entries and no button left to retry.
+    if (userId !== split.payerId) await recordSettlementInLedgers(splitId, split, share, userId)
 
-    const today = new Date().toISOString().slice(0, 10)
-    const amount = split.shares?.[userId] ?? share.amount
-    const txId = splitTxId(splitId, userId)
-    const payerName = split.participants.find((p) => p.userId === split.payerId)?.displayName || "payer"
-
-    await createSplitTransaction(userId, txId, {
-      merchant: split.merchant,
-      date: today,
-      total: amount,
-      lineItems: splitLineItems(`${split.merchant} — your share (paid to ${payerName})`, amount),
-      source: "split",
-      type: "expense",
-      splitId
-    })
-
-    await createSplitTransaction(split.payerId, txId, {
-      merchant: `${split.merchant} — repaid by ${share.displayName || "participant"}`,
-      date: today,
-      total: -amount,
-      lineItems: [],
-      source: "split",
-      type: "refund",
-      splitId
+    // Transaction: two people settling at once must not overwrite each other's status
+    await runTransaction(db, async (tx) => {
+      const fresh = await tx.get(splitRef)
+      if (!fresh.exists()) throw new Error("Split not found")
+      const participants = fresh.data().participants
+      if (participants.find((p) => p.userId === userId)?.status === "settled") return
+      tx.update(splitRef, {
+        participants: participants.map((p) => (p.userId === userId ? { ...p, status: "settled" } : p))
+      })
     })
   } catch (error) {
     console.error("Error settling split:", error)
     throw error
   }
+}
+
+// Participant's expense + payer's refund, both with fixed ids (idempotent on retry)
+async function recordSettlementInLedgers(splitId, split, share, userId) {
+  const today = localDate()
+  const amount = split.shares?.[userId] ?? share.amount
+  const txId = splitTxId(splitId, userId)
+  const payerName = split.participants.find((p) => p.userId === split.payerId)?.displayName || "payer"
+
+  await createSplitTransaction(userId, txId, {
+    merchant: split.merchant,
+    date: today,
+    total: amount,
+    lineItems: splitLineItems(`${split.merchant} — your share (paid to ${payerName})`, amount),
+    source: "split",
+    type: "expense",
+    splitId
+  })
+
+  await createSplitTransaction(split.payerId, txId, {
+    merchant: `${split.merchant} — repaid by ${share.displayName || "participant"}`,
+    date: today,
+    total: -amount,
+    lineItems: [],
+    source: "split",
+    type: "refund",
+    splitId
+  })
 }
 
 // ─── Leave / delete group ────────────────────────────────────────────────────

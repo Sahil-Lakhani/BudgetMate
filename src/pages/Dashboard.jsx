@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../components/Card"
+import { localMonth, itemTotal } from "../lib/utils"
 import { SplitTag } from "../components/SplitTag"
 import Insights from "../components/Insights"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
-import { ArrowDownRight, DollarSign, TrendingUp } from "lucide-react"
+import { ArrowDownRight, Wallet, PiggyBank, TrendingUp } from "lucide-react"
 import { useTheme } from "../context/ThemeContext"
 import { useEffect, useState, useMemo } from "react"
 import { useAuth } from "../context/AuthContext"
@@ -80,20 +81,22 @@ export default function Dashboard() {
 
   // Sync modal currency and lock body scroll when modal opens
   useEffect(() => {
-    if (showSettingsModal) {
-      setTempSettings(prev => ({ ...prev, currency }))
-      setModalStep(1)
-      setModalError("")
-      document.body.style.overflow = "hidden"
-    } else {
+    if (!showSettingsModal) return
+    setTempSettings(prev => ({ ...prev, currency }))
+    setModalStep(1)
+    setModalError("")
+    document.body.style.overflow = "hidden"
+    const onKey = (e) => { if (e.key === "Escape") setShowSettingsModal(false) }
+    document.addEventListener("keydown", onKey)
+    return () => {
       document.body.style.overflow = ""
+      document.removeEventListener("keydown", onKey)
     }
-    return () => { document.body.style.overflow = "" }
   }, [showSettingsModal])
 
   const calculateStats = (data, settings) => {
     const now = new Date()
-    const currentMonth = now.toISOString().slice(0, 7)
+    const currentMonth = localMonth(now)
     const currentYear = now.getFullYear()
 
     let monthlyTotal = 0
@@ -102,18 +105,16 @@ export default function Dashboard() {
 
     data.forEach(t => {
       const amount = parseFloat(t.total || 0)
-      const date = new Date(t.date)
 
-      if (date.getFullYear() === currentYear) yearlyTotal += amount
+      if (t.date.startsWith(`${currentYear}-`)) yearlyTotal += amount
       if (t.date.startsWith(currentMonth)) monthlyTotal += amount
 
       if (t.type === "refund") return // refunds count toward totals, not category spend
 
       if (t.lineItems && Array.isArray(t.lineItems)) {
         t.lineItems.forEach(item => {
-          const itemTotal = parseFloat(item.totalPrice || 0)
           const cat = item.category || "Other"
-          categoryTotals[cat] = (categoryTotals[cat] || 0) + itemTotal
+          categoryTotals[cat] = (categoryTotals[cat] || 0) + itemTotal(item)
         })
       } else {
         const cat = t.category || "Other"
@@ -171,8 +172,16 @@ export default function Dashboard() {
       setModalError("Please enter a valid income greater than 0.")
       return
     }
-    if (!savingsVal || savingsVal <= 0) {
-      setModalError("Please enter a valid savings goal greater than 0.")
+    if (!Number.isFinite(savingsVal) || savingsVal < 0) {
+      setModalError("Please enter a savings goal of 0 or more.")
+      return
+    }
+    if (tempSettings.savingsType === "percentage" && savingsVal > 100) {
+      setModalError("A savings percentage can't be more than 100%.")
+      return
+    }
+    if (tempSettings.savingsType === "fixed" && savingsVal > incomeVal) {
+      setModalError("Your savings goal can't be larger than your income.")
       return
     }
 
@@ -182,7 +191,7 @@ export default function Dashboard() {
       setCurrency(tempSettings.currency)
       setShowSettingsModal(false)
       calculateStats(transactions, tempSettings)
-    } catch (err) {
+    } catch {
       setModalError("Failed to save settings. Please try again.")
     } finally {
       setIsSaving(false)
@@ -190,7 +199,7 @@ export default function Dashboard() {
   }
 
   if (loading) {
-    return <div className="p-8 text-center text-news">Loading dashboard...</div>
+    return <div role="status" className="p-8 text-center text-news">Loading dashboard…</div>
   }
 
   if (error) {
@@ -212,7 +221,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-sans font-bold mb-1 text-ink">Financial Overview</h2>
+        <h1 className="text-2xl font-sans font-bold mb-1 text-ink">Financial Overview</h1>
         <p className="text-sm text-news">Your daily financial digest.</p>
       </div>
 
@@ -221,7 +230,7 @@ export default function Dashboard() {
         <Card className="p-4">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0 mb-2 border-0">
             <CardTitle className="text-sm font-medium font-sans text-news">Monthly Income</CardTitle>
-            <DollarSign className="h-4 w-4 text-ink" />
+            <Wallet className="h-4 w-4 text-ink" aria-hidden="true" />
           </CardHeader>
           <CardContent className="p-0">
             <div className="text-2xl font-bold font-sans text-ink">
@@ -254,7 +263,7 @@ export default function Dashboard() {
         <Card className="p-4">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0 mb-2 border-0">
             <CardTitle className="text-sm font-medium font-sans text-news">Remaining Budget</CardTitle>
-            <DollarSign className="h-4 w-4 text-ink" />
+            <PiggyBank className="h-4 w-4 text-ink" aria-hidden="true" />
           </CardHeader>
           <CardContent className="p-0">
             <div className={`text-2xl font-bold font-sans ${stats.remainingSpendable < 0 ? 'text-red-500' : 'text-ink'}`}>
@@ -284,7 +293,7 @@ export default function Dashboard() {
               <h3 id="settings-modal-title" className="text-lg font-bold text-ink">
                 {modalStep === 1 ? "Welcome to BudgetMate" : "Setup Your Budget"}
               </h3>
-              <button onClick={() => setShowSettingsModal(false)} className="text-news hover:text-ink">
+              <button type="button" onClick={() => setShowSettingsModal(false)} aria-label="Close" className="p-2 -m-2 text-news hover:text-ink">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -300,8 +309,9 @@ export default function Dashboard() {
               <div className="space-y-4">
                 <p className="text-sm text-news">Choose your preferred currency. You can change this later in Settings.</p>
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">Currency</label>
+                  <label htmlFor="onboarding-currency" className="block text-sm font-medium text-ink mb-1">Currency</label>
                   <Select
+                    id="onboarding-currency"
                     value={tempSettings.currency}
                     onChange={(e) => setTempSettings({ ...tempSettings, currency: e.target.value })}
                     options={CURRENCIES.map(c => ({ value: c.code, label: c.label }))}
@@ -321,10 +331,12 @@ export default function Dashboard() {
                 <p className="text-sm text-news">Enter your monthly income and savings goal to calculate your budget.</p>
 
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">
+                  <label htmlFor="onboarding-income" className="block text-sm font-medium text-ink mb-1">
                     Monthly Income ({currencySymbol})
                   </label>
                   <input
+                    id="onboarding-income"
+                    inputMode="decimal"
                     type="number"
                     min="0"
                     value={tempSettings.income}
@@ -335,15 +347,19 @@ export default function Dashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-ink mb-1">Savings Goal</label>
-                  <div className="flex gap-2 mb-2">
+                  <p id="onboarding-savings-label" className="block text-sm font-medium text-ink mb-1">Savings Goal</p>
+                  <div className="flex gap-2 mb-2" role="group" aria-labelledby="onboarding-savings-label">
                     <button
+                      type="button"
+                      aria-pressed={tempSettings.savingsType === 'percentage'}
                       onClick={() => setTempSettings({ ...tempSettings, savingsType: 'percentage' })}
                       className={`flex-1 py-1 px-2 text-xs rounded-md border ${tempSettings.savingsType === 'percentage' ? 'bg-ink text-paper border-ink' : 'border-border text-news'}`}
                     >
                       Percentage (%)
                     </button>
                     <button
+                      type="button"
+                      aria-pressed={tempSettings.savingsType === 'fixed'}
                       onClick={() => setTempSettings({ ...tempSettings, savingsType: 'fixed' })}
                       className={`flex-1 py-1 px-2 text-xs rounded-md border ${tempSettings.savingsType === 'fixed' ? 'bg-ink text-paper border-ink' : 'border-border text-news'}`}
                     >
@@ -351,8 +367,11 @@ export default function Dashboard() {
                     </button>
                   </div>
                   <input
+                    aria-label={tempSettings.savingsType === 'percentage' ? "Savings percentage" : "Savings amount"}
+                    inputMode="decimal"
                     type="number"
                     min="0"
+                    max={tempSettings.savingsType === 'percentage' ? 100 : undefined}
                     value={tempSettings.savingsValue}
                     onChange={(e) => setTempSettings({ ...tempSettings, savingsValue: e.target.value })}
                     className="w-full p-2 rounded-md border border-border bg-transparent text-ink focus:outline-none focus:ring-2 focus:ring-ink"
@@ -360,7 +379,7 @@ export default function Dashboard() {
                   />
                 </div>
 
-                {modalError && <p className="text-sm text-red-500">{modalError}</p>}
+                {modalError && <p role="alert" className="text-sm text-red-500">{modalError}</p>}
 
                 <div className="flex gap-2">
                   <button

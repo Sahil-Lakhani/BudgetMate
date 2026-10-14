@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { localMonth, itemTotal } from "../lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/Card"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { useTheme } from "../context/ThemeContext"
@@ -39,7 +40,7 @@ export default function Analytics() {
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
       months.push({
-        key: d.toISOString().slice(0, 7),
+        key: localMonth(d),
         name: d.toLocaleString('en-US', { month: 'short' }),
         total: 0
       })
@@ -60,7 +61,7 @@ export default function Analytics() {
       if (t.lineItems && Array.isArray(t.lineItems)) {
         t.lineItems.forEach(item => {
           const cat = item.category || 'Other'
-          const amount = parseFloat(item.totalPrice || item.price || 0)
+          const amount = itemTotal(item)
           categoryTotals[cat] = (categoryTotals[cat] || 0) + amount
           categoryCounts[cat] = (categoryCounts[cat] || 0) + 1
         })
@@ -81,7 +82,7 @@ export default function Analytics() {
   }
 
   if (loading) {
-    return <div className="p-8 text-center text-news">Loading analytics...</div>
+    return <div role="status" className="p-8 text-center text-news">Loading analytics…</div>
   }
 
   if (fetchError) {
@@ -93,7 +94,7 @@ export default function Analytics() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-sans font-bold mb-2 text-ink">Analytics</h2>
+        <h1 className="text-3xl font-sans font-bold mb-2 text-ink">Analytics</h1>
         <p className="text-news">Deep dive into your spending habits.</p>
       </div>
 
@@ -154,7 +155,7 @@ export default function Analytics() {
                       <span className="text-lg font-sans font-bold text-news-light">{idx + 1}</span>
                       <div>
                         <p className="font-medium">{cat.name}</p>
-                        <p className="text-xs text-news">{cat.count} transactions</p>
+                        <p className="text-xs text-news">{cat.count} {cat.count === 1 ? "item" : "items"}</p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -174,7 +175,7 @@ export default function Analytics() {
           <CardContent className="space-y-4">
             <div className="p-4 bg-news-light/20 border border-news-light">
               <h4 className="font-bold font-sans mb-1">Total Transactions</h4>
-              <p className="text-sm text-news">{totalTransactions} transactions recorded</p>
+              <p className="text-sm text-news">{totalTransactions} {totalTransactions === 1 ? "transaction" : "transactions"} recorded</p>
             </div>
             <div className="p-4 bg-news-light/20 border border-news-light">
               <h4 className="font-bold font-sans mb-1">This Month</h4>

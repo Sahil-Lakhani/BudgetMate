@@ -46,11 +46,9 @@ export function checkRateLimit(actionName) {
     const oldestTimestamp = Math.min(...timestamps);
     const timeUntilReset = Math.ceil((oldestTimestamp + config.windowMs - now) / 1000);
     
-    throw new Error(
-      `Rate limit exceeded for ${actionName}. ` +
-      `Maximum ${config.maxRequests} requests per ${config.windowMs / 1000} seconds. ` +
-      `Please wait ${timeUntilReset} seconds before trying again.`
-    );
+    const error = new Error(`You're doing that too often. Please wait ${timeUntilReset} seconds and try again.`);
+    error.userFacing = true;
+    throw error;
   }
   
   // Add current timestamp and save
@@ -92,7 +90,7 @@ export function getRateLimitStatus(actionName) {
     if (stored) {
       timestamps = JSON.parse(stored);
     }
-  } catch (error) {
+  } catch {
     timestamps = [];
   }
   

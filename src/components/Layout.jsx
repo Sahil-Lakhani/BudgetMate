@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { cn } from "../lib/utils"
 import { Button } from "./Button"
 import { Footer } from "./Footer"
-import Logo from "./Logo"
+
 import { useTheme } from "../context/ThemeContext"
 import { useAuth } from "../context/AuthContext"
 import { getUserNotifications, NOTIFICATIONS_CHANGED_EVENT } from "../lib/firestore"
@@ -50,7 +50,7 @@ export function Layout({ children }) {
     <div className="min-h-screen md:h-screen bg-paper flex flex-col md:flex-row transition-colors duration-300 md:overflow-hidden">
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card sticky top-0 z-50">
-        <Link to="/" className="flex items-center gap-2 text-xl font-sans font-bold text-ink"><Logo className="h-6" title="" />BudgetMate</Link>
+        <Link to="/" className="flex items-center gap-2 text-xl font-sans font-bold text-ink"><img src="/favicon.svg" alt="" className="h-6 w-6 rounded-md" />BudgetMate</Link>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
             {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
@@ -78,7 +78,7 @@ export function Layout({ children }) {
         )}
       >
         <div className="p-6 border-b border-border">
-          <Link to="/" className="flex items-center gap-2.5 text-2xl font-sans font-bold text-ink"><Logo className="h-7" title="" />BudgetMate</Link>
+          <Link to="/" className="flex items-center gap-2.5 text-2xl font-sans font-bold text-ink"><img src="/favicon.svg" alt="" className="h-7 w-7 rounded-md" />BudgetMate</Link>
           <p className="text-xs text-news mt-1 uppercase tracking-wider">{new Date().toLocaleDateString(undefined, { dateStyle: "medium" })}</p>
         </div>
         <nav className="p-4 space-y-2 flex-1">

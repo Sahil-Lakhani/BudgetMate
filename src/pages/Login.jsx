@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext"
 import { usePageTitle } from "../lib/usePageTitle"
 import { Button } from "../components/Button"
 import { Footer } from "../components/Footer"
-import Logo from "../components/Logo"
+
 import {
   Card,
   CardContent,
@@ -64,7 +64,7 @@ export default function Login() {
 
       <main id="main-content" className="relative w-full max-w-md p-4 flex-1 flex flex-col justify-center">
         <div className="text-center mb-8 space-y-2">
-          <Logo className="h-[72px] mx-auto mb-5 text-zinc-50" title="" />
+          <img src="/favicon.svg" alt="" className="h-[72px] w-[72px] mx-auto mb-5 rounded-2xl" />
           <h1 className="text-4xl font-bold tracking-tight font-sans text-white">
             BudgetMate
           </h1>

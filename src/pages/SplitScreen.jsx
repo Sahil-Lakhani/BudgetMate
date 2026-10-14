@@ -181,7 +181,7 @@ export default function SplitScreen() {
   return (
     <div className="space-y-6 max-w-lg">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+        <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="Go back">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>

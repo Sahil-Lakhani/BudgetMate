@@ -10,14 +10,14 @@ import { useCurrency } from "../context/CurrencyContext"
 import { getCurrencySymbol } from "../lib/currency"
 
 export default function SplitDetail() {
-  usePageTitle("Split")
+  const [split, setSplit] = useState(null)
+  usePageTitle(split?.merchant || "Split")
   const { groupId, splitId } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
   const { currency } = useCurrency()
   const currencySymbol = getCurrencySymbol(currency)
 
-  const [split, setSplit] = useState(null)
   const [loading, setLoading] = useState(true)
   const [settling, setSettling] = useState(false)
   const [settledNote, setSettledNote] = useState("")
@@ -53,14 +53,19 @@ export default function SplitDetail() {
   }
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-news" /></div>
-  if (!split) return <p className="text-news">Split not found.</p>
+  if (!split) return (
+    <div className="py-12 text-center space-y-4">
+      <p className="text-news">This split doesn't exist, or you don't have access to it.</p>
+      <Button variant="secondary" className="rounded-md" onClick={() => navigate(`/groups/${groupId}`)}>Back to group</Button>
+    </div>
+  )
 
   const allSettled = split.participants.every((p) => p.status === "settled")
 
   return (
     <div className="space-y-6 max-w-lg">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate(`/groups/${groupId}`)}>
+        <Button variant="ghost" size="icon" onClick={() => navigate(`/groups/${groupId}`)} aria-label="Back to group">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
@@ -89,7 +94,7 @@ export default function SplitDetail() {
             return (
               <div key={p.userId} className="flex items-center gap-3 py-3">
                 {p.photoURL
-                  ? <img src={p.photoURL} alt={p.displayName} className="w-8 h-8 rounded-full" />
+                  ? <img src={p.photoURL} referrerPolicy="no-referrer" loading="lazy" alt={p.displayName} className="w-8 h-8 rounded-full" />
                   : <div className="w-8 h-8 rounded-full bg-ink/10 flex items-center justify-center text-xs font-bold">{(p.displayName || "?")[0]}</div>
                 }
                 <div className="flex-1 min-w-0">
@@ -116,7 +121,7 @@ export default function SplitDetail() {
       </Card>
 
       {settledNote && (
-        <p className={`text-sm ${settledNote.startsWith("Couldn't") ? "text-red-500" : "text-green-600"}`}>{settledNote}</p>
+        <p role="status" className={`text-sm ${settledNote.startsWith("Couldn't") ? "text-red-500" : "text-green-600"}`}>{settledNote}</p>
       )}
     </div>
   )

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { useNavigate, useParams } from "react-router-dom"
+import { Link, useNavigate, useParams } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
 import { getGroup, subscribeGroupSplits, leaveGroup, deleteGroup, addMemberToGroup, createNotification, GROUP_ERRORS } from "../lib/firestore"
 import { GROUP_MEMBER_LIMIT } from "../lib/validation"
@@ -13,14 +13,14 @@ import { useCurrency } from "../context/CurrencyContext"
 import { getCurrencySymbol } from "../lib/currency"
 
 export default function GroupDetail() {
-  usePageTitle("Group")
+  const [group, setGroup] = useState(null)
+  usePageTitle(group?.name || "Group")
   const { groupId } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
   const { currency } = useCurrency()
   const currencySymbol = getCurrencySymbol(currency)
 
-  const [group, setGroup] = useState(null)
   const [splits, setSplits] = useState([])
   const [loading, setLoading] = useState(true)
   const [confirming, setConfirming] = useState(null) // null | "leave" | "delete"
@@ -95,13 +95,18 @@ export default function GroupDetail() {
   }
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-news" /></div>
-  if (!group) return <p className="text-news">Group not found.</p>
+  if (!group) return (
+    <div className="py-12 text-center space-y-4">
+      <p className="text-news">This group doesn't exist, or you don't have access to it.</p>
+      <Button variant="secondary" className="rounded-md" onClick={() => navigate("/groups")}>Back to groups</Button>
+    </div>
+  )
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/groups")}>
-          <ArrowLeft className="h-5 w-5" />
+        <Button variant="ghost" size="icon" onClick={() => navigate("/groups")} aria-label="Back to groups">
+          <ArrowLeft className="h-5 w-5" aria-hidden="true" />
         </Button>
         <div className="flex-1">
           <h1 className="text-3xl font-sans font-bold text-ink">{group.name}</h1>
@@ -168,14 +173,14 @@ export default function GroupDetail() {
                 : <UserSearch addedIds={group.memberIds} onAdd={handleAddMember} />
               }
               {addingId && <p className="text-xs text-news flex items-center gap-1.5"><Loader2 className="h-3 w-3 animate-spin" /> Adding…</p>}
-              {addError && <p className="text-sm text-red-500">{addError}</p>}
+              {addError && <p role="alert" className="text-sm text-red-500">{addError}</p>}
               <p className="text-xs text-news">New members see this group's splits but aren't part of splits made before they joined.</p>
             </div>
           )}
           {group.members.map((m) => (
             <div key={m.userId} className="flex items-center gap-3 py-2.5">
               {m.photoURL
-                ? <img src={m.photoURL} alt={m.displayName} className="w-8 h-8 rounded-full" />
+                ? <img src={m.photoURL} referrerPolicy="no-referrer" loading="lazy" alt={m.displayName} className="w-8 h-8 rounded-full" />
                 : <div className="w-8 h-8 rounded-full bg-ink/10 flex items-center justify-center text-xs font-bold">{(m.displayName || "?")[0]}</div>
               }
               <div className="flex-1 min-w-0">
@@ -210,11 +215,8 @@ export default function GroupDetail() {
             const payerName = s.payerId === user.uid ? "you" : (payer?.displayName || "someone")
             const myPending = myShare && myShare.status !== "settled" && s.payerId !== user.uid
             return (
-              <Card
-                key={s.id}
-                className="cursor-pointer hover:border-ink/30 hover:shadow-md transition-all"
-                onClick={() => navigate(`/groups/${groupId}/split/${s.id}`)}
-              >
+              <Link key={s.id} to={`/groups/${groupId}/split/${s.id}`} className="block rounded-lg">
+              <Card className="h-full hover:border-ink/30 hover:shadow-md transition-all">
                 <CardContent className="py-4 md:pt-5 md:pb-5 flex items-center md:flex-col md:items-stretch gap-4 md:gap-3 md:h-full">
                   {/* Title + status */}
                   <div className="flex-1 min-w-0 md:flex-none">
@@ -252,6 +254,7 @@ export default function GroupDetail() {
                   </div>
                 </CardContent>
               </Card>
+              </Link>
             )
           })}
         </div>
@@ -296,7 +299,7 @@ export default function GroupDetail() {
               </div>
             </>
           )}
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && <p role="alert" className="text-sm text-red-500">{error}</p>}
         </CardContent>
       </Card>
     </div>

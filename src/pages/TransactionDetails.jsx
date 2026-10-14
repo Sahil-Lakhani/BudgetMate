@@ -32,6 +32,9 @@ export default function TransactionDetails() {
 	const [transaction, setTransaction] = useState(null)
 	const [loading, setLoading] = useState(true)
 	const [deleting, setDeleting] = useState(false)
+	const [confirmingDelete, setConfirmingDelete] = useState(false)
+	const [loadError, setLoadError] = useState("")
+	const [deleteError, setDeleteError] = useState("")
 
 	useEffect(() => {
 		const fetchTransaction = async () => {
@@ -41,6 +44,7 @@ export default function TransactionDetails() {
 					setTransaction(data)
 				} catch (error) {
 					console.error("Error loading transaction:", error)
+					setLoadError("Couldn't load this transaction. Check your connection and try again.")
 				} finally {
 					setLoading(false)
 				}
@@ -51,27 +55,26 @@ export default function TransactionDetails() {
 
 	const handleDelete = async () => {
 		if (deleting) return
-		if (confirm("Are you sure you want to delete this transaction?")) {
-			setDeleting(true)
-			try {
-				await deleteTransaction(user.uid, id)
-				navigate("/expenses")
-			} catch (error) {
-				console.error("Error deleting transaction:", error)
-				alert("Failed to delete transaction.")
-				setDeleting(false)
-			}
+		setDeleting(true)
+		setDeleteError("")
+		try {
+			await deleteTransaction(user.uid, id)
+			navigate("/expenses")
+		} catch (error) {
+			console.error("Error deleting transaction:", error)
+			setDeleteError("Failed to delete the transaction. Please try again.")
+			setDeleting(false)
 		}
 	}
 
 	if (loading) {
-		return <div className="p-8 text-center text-news">Loading transaction details...</div>
+		return <div role="status" className="p-8 text-center text-news">Loading transaction details…</div>
 	}
 
 	if (!transaction) {
 		return (
 			<div className="p-8 text-center space-y-4">
-				<p className="text-news">Transaction not found.</p>
+				<p className="text-news">{loadError || "Transaction not found."}</p>
 				<Button onClick={() => navigate("/expenses")}>Back to Expenses</Button>
 			</div>
 		)
@@ -81,15 +84,30 @@ export default function TransactionDetails() {
 		<div className="max-w-2xl mx-auto space-y-6">
 			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-4">
-					<Button variant="ghost" size="icon" onClick={() => navigate("/expenses")}>
-						<ArrowLeft className="h-5 w-5 text-ink" />
+					<Button variant="ghost" size="icon" onClick={() => navigate("/expenses")} aria-label="Back to expenses">
+						<ArrowLeft className="h-5 w-5 text-ink" aria-hidden="true" />
 					</Button>
-					<h2 className="text-2xl font-sans font-bold text-ink">Transaction Details</h2>
+					<h1 className="text-2xl font-sans font-bold text-ink">Transaction Details</h1>
 				</div>
-				<Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700 hover:bg-red-100 disabled:opacity-40" onClick={handleDelete} disabled={deleting} aria-label="Delete transaction">
-					<Trash2 className="h-5 w-5" />
+				<Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700 hover:bg-red-100 disabled:opacity-40" onClick={() => setConfirmingDelete(true)} disabled={deleting} aria-label="Delete transaction">
+					<Trash2 className="h-5 w-5" aria-hidden="true" />
 				</Button>
 			</div>
+
+			{confirmingDelete && (
+				<div role="alertdialog" aria-labelledby="delete-tx-title" className="rounded-md border border-red-300 dark:border-red-900 bg-card p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+					<p id="delete-tx-title" className="flex-1 text-sm text-ink">Delete this transaction? This can't be undone.</p>
+					<div className="flex gap-2">
+						<Button variant="destructive" size="sm" className="rounded-md" onClick={handleDelete} disabled={deleting}>
+							{deleting ? "Deleting…" : "Delete"}
+						</Button>
+						<Button variant="ghost" size="sm" className="rounded-md" onClick={() => setConfirmingDelete(false)} disabled={deleting}>
+							Cancel
+						</Button>
+					</div>
+					{deleteError && <p role="alert" className="text-sm text-red-500 sm:basis-full">{deleteError}</p>}
+				</div>
+			)}
 
 			<Card>
 				<CardContent className="p-6 space-y-6">

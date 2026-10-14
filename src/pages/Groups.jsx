@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
 import { getUserGroups, getUserNotifications, markNotificationRead, markAllNotificationsRead, subscribeSplitsForGroups, NOTIFICATIONS_CHANGED_EVENT } from "../lib/firestore"
 import { computeBalances } from "../lib/balances"
@@ -20,11 +20,15 @@ export default function Groups() {
   const [splits, setSplits] = useState([])
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState("")
 
   useEffect(() => {
     if (!user) return
     Promise.all([
-      getUserGroups(user.uid).then(setGroups).catch(console.error),
+      getUserGroups(user.uid).then(setGroups).catch((e) => {
+        console.error(e)
+        setLoadError("Couldn't load your groups. Check your connection and try again.")
+      }),
       getUserNotifications(user.uid)
         .then((n) => setNotifications(n.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))))
         .catch(console.error)
@@ -110,10 +114,11 @@ export default function Groups() {
           </CardHeader>
           <CardContent className="divide-y divide-border">
             {notifications.map((n) => (
-              <div
+              <button
+                type="button"
                 key={n.id}
                 onClick={() => openNotification(n)}
-                className="flex items-center gap-3 py-2.5 cursor-pointer hover:bg-ink/5 -mx-2 px-2 rounded-md transition-colors"
+                className="w-full text-left flex items-center gap-3 py-2.5 cursor-pointer hover:bg-ink/5 -mx-2 px-2 rounded-md transition-colors"
               >
                 <div className="flex-1 min-w-0">
                   {n.type === "group_added" ? (
@@ -130,19 +135,22 @@ export default function Groups() {
                 {n.type !== "group_added" && (
                   <p className="text-sm font-mono text-ink shrink-0">{currencySymbol}{Number(n.amount).toFixed(2)}</p>
                 )}
-              </div>
+              </button>
             ))}
           </CardContent>
         </Card>
       )}
 
       {loading && (
-        <div className="flex justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-news" />
+        <div role="status" className="flex justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-news" aria-hidden="true" />
+          <span className="sr-only">Loading groups…</span>
         </div>
       )}
 
-      {!loading && groups.length === 0 && (
+      {!loading && loadError && <p role="alert" className="text-sm text-red-500 text-center">{loadError}</p>}
+
+      {!loading && !loadError && groups.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center py-16 text-center gap-4">
             <Users className="h-12 w-12 text-news" />
@@ -157,7 +165,8 @@ export default function Groups() {
 
       <div className="space-y-3">
         {groups.map((g) => (
-          <Card key={g.id} className="cursor-pointer hover:border-ink/30 transition-colors" onClick={() => navigate(`/groups/${g.id}`)}>
+          <Link key={g.id} to={`/groups/${g.id}`} className="block rounded-lg">
+          <Card className="hover:border-ink/30 transition-colors">
             <CardContent className="flex items-center gap-4 py-4">
               <div className="w-10 h-10 rounded-full bg-ink flex items-center justify-center shrink-0">
                 <Users className="h-5 w-5 text-paper" />
@@ -172,7 +181,7 @@ export default function Groups() {
               <div className="flex -space-x-2">
                 {g.members.slice(0, 3).map((m) => (
                   m.photoURL
-                    ? <img key={m.userId} src={m.photoURL} alt={m.displayName} className="w-7 h-7 rounded-full border-2 border-paper" />
+                    ? <img key={m.userId} src={m.photoURL} referrerPolicy="no-referrer" loading="lazy" alt={m.displayName} className="w-7 h-7 rounded-full border-2 border-paper" />
                     : <div key={m.userId} className="w-7 h-7 rounded-full border-2 border-paper bg-news-light flex items-center justify-center text-xs font-bold text-ink">{(m.displayName || "?")[0]}</div>
                 ))}
                 {g.members.length > 3 && (
@@ -183,6 +192,7 @@ export default function Groups() {
               </div>
             </CardContent>
           </Card>
+          </Link>
         ))}
       </div>
     </div>

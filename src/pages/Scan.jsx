@@ -1,17 +1,28 @@
 import { useState } from "react"
+import { localDate } from "../lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/Card"
 import { Button } from "../components/Button"
 import { Input } from "../components/Input"
 import { Upload, Camera, Loader2, Check, X, Plus, Trash2 } from "lucide-react"
-import { useNavigate, useLocation } from "react-router-dom"
+import { useNavigate, useLocation, Link } from "react-router-dom"
 import { useEffect } from "react"
-import { analyzeReceipt } from "../lib/gemini"
+import { analyzeReceipt, MAX_UPLOAD_BYTES } from "../lib/gemini"
 
 import { saveTransaction } from "../lib/firestore"
 import { useAuth } from "../context/AuthContext"
 import { useCurrency } from "../context/CurrencyContext"
 import { getCurrencySymbol } from "../lib/currency"
 import { usePageTitle } from "../lib/usePageTitle"
+
+// Gemini's `price` is the line total; the form edits a unit price (saved as price × qty).
+function unitPrice(item) {
+  const unit = parseFloat(item.unit_price)
+  if (Number.isFinite(unit)) return String(unit)
+  const total = parseFloat(item.price) || 0
+  const qty = parseFloat(item.quantity)
+  if (!(qty > 0)) return String(total)
+  return String(Math.round((total / qty) * 100) / 100)
+}
 
 export default function Scan() {
   usePageTitle("Scan Receipt")
@@ -39,11 +50,15 @@ export default function Scan() {
     if (location.state?.file) {
       const file = location.state.file
       const gId = location.state.groupId || null
+      navigate(location.pathname, { replace: true, state: {} })
+      if (!file.type?.startsWith("image/") || file.size > MAX_UPLOAD_BYTES) {
+        setScanError("Please choose an image file (JPG, PNG, WebP or HEIC) up to 15 MB.")
+        return
+      }
       setFile(file)
       setPreviewUrl(URL.createObjectURL(file))
       setStatus("preview")
       if (gId) setGroupId(gId)
-      navigate(location.pathname, { replace: true, state: {} })
     }
   }, [location.state, navigate])
 
@@ -56,7 +71,16 @@ export default function Scan() {
 
   const handleFileUpload = (e) => {
     const selectedFile = e.target.files[0]
+    e.target.value = ""
     if (selectedFile) {
+      if (!selectedFile.type.startsWith("image/")) {
+        setScanError("Please choose an image file (JPG, PNG, WebP or HEIC).")
+        return
+      }
+      if (selectedFile.size > MAX_UPLOAD_BYTES) {
+        setScanError("That image is larger than 15 MB. Please choose a smaller one.")
+        return
+      }
       setScanError("")
       setFile(selectedFile)
       setPreviewUrl(URL.createObjectURL(selectedFile))
@@ -67,16 +91,22 @@ export default function Scan() {
   const handleAnalyze = async () => {
     if (file) {
       setStatus("scanning")
+      setScanError("")
       try {
         const data = await analyzeReceipt(file)
+        if (!data?.merchant && !data?.items?.length) {
+          setScanError("We couldn't read a receipt in this image. Try a sharper, well-lit photo.")
+          setStatus("preview")
+          return
+        }
         setExtractedData({
           merchant: data.merchant || "",
           location: data.location || "",
-          date: data.date || new Date().toISOString().split('T')[0],
+          date: data.date || localDate(),
           total: data.total?.toString() || "",
           items: data.items?.map(item => ({
             name: item.name || "",
-            price: item.price?.toString() || "0",
+            price: unitPrice(item),
             quantity: item.quantity?.toString() || "1",
             category: item.category || "Other"
           })) || []
@@ -84,7 +114,7 @@ export default function Scan() {
         setStatus("review")
       } catch (error) {
         console.error("Scan failed:", error)
-        setScanError("Failed to analyze receipt. Please try again or check the image quality.")
+        setScanError(error.userFacing ? error.message : "Failed to analyze receipt. Please try again or check the image quality.")
         setStatus("preview")
       }
     }
@@ -98,9 +128,26 @@ export default function Scan() {
 
   const handleSave = async () => {
     if (!user) {
-      alert("Please log in to save transactions.")
+      setScanError("Your session has expired. Please sign in again.")
       return
     }
+    if (!extractedData.merchant.trim()) {
+      setScanError("Please enter the merchant name.")
+      return
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(extractedData.date)) {
+      setScanError("Please enter the receipt date.")
+      return
+    }
+    if (!(parseFloat(extractedData.total) >= 0)) {
+      setScanError("Please enter a valid total amount.")
+      return
+    }
+    if (!groupId && !extractedData.items.some((item) => item.name.trim())) {
+      setScanError("Please keep at least one line item.")
+      return
+    }
+    setScanError("")
 
     setStatus("scanning") // Reuse scanning spinner or add a saving state
     try {
@@ -124,7 +171,7 @@ export default function Scan() {
           state: {
             merchant: extractedData.merchant,
             totalAmount: parseFloat(extractedData.total) || 0,
-            date: extractedData.date || new Date().toISOString().slice(0, 10),
+            date: extractedData.date || localDate(),
             lineItems: transactionData.lineItems,
             fromScan: true
           }
@@ -140,7 +187,7 @@ export default function Scan() {
       }, 1500)
     } catch (error) {
       console.error("Error saving transaction:", error)
-      alert("Failed to save transaction. Please try again.")
+      setScanError(error.userFacing ? error.message : "Failed to save the expense. Please check the fields and try again.")
       setStatus("review")
     }
   }
@@ -150,13 +197,13 @@ export default function Scan() {
     setFile(null)
     setPreviewUrl(null)
     setScanError("")
-    setExtractedData({ merchant: "", date: "", total: "", items: [] })
+    setExtractedData({ merchant: "", location: "", date: "", total: "", items: [] })
   }
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <div>
-        <h2 className="text-3xl font-sans font-bold mb-2">Scan Receipt</h2>
+        <h1 className="text-3xl font-sans font-bold mb-2">Scan Receipt</h1>
       </div>
 
       {status === "idle" && (
@@ -167,7 +214,7 @@ export default function Scan() {
             </div>
             <div className="text-center">
               <h3 className="text-lg font-bold font-sans">Upload or Snap a Photo</h3>
-              <p className="text-news text-sm">Supported formats: JPG, PNG, PDF</p>
+              <p className="text-news text-sm">JPG, PNG, WebP or HEIC · up to 15 MB</p>
             </div>
             <div className="flex gap-4">
               <Button className="relative">
@@ -192,8 +239,17 @@ export default function Scan() {
                 />
               </Button>
             </div>
+            {scanError && <p role="alert" className="text-sm text-red-500 text-center">{scanError}</p>}
           </CardContent>
         </Card>
+      )}
+
+      {(status === "idle" || status === "preview") && (
+        <p className="text-xs text-news text-center max-w-md mx-auto">
+          When you tap “Analyze Receipt”, the photo is sent to Google's Gemini AI service to read it. BudgetMate does not
+          store the photo — only the details you confirm. Avoid photos showing card numbers or other people's data.{" "}
+          <Link to="/privacy#ai" className="underline hover:text-ink">Privacy Policy</Link>
+        </p>
       )}
 
       {status === "preview" && (
@@ -212,7 +268,7 @@ export default function Scan() {
               )}
             </div>
             {scanError && (
-              <p className="text-sm text-red-500 text-center">{scanError}</p>
+              <p role="alert" className="text-sm text-red-500 text-center">{scanError}</p>
             )}
             <div className="flex gap-4 justify-center">
               <Button onClick={handleAnalyze} className="w-full max-w-xs">
@@ -253,22 +309,25 @@ export default function Scan() {
             )}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Merchant</label>
+                <label htmlFor="scan-merchant" className="text-sm font-medium">Merchant</label>
                 <Input
+                  id="scan-merchant"
                   value={extractedData.merchant}
                   onChange={(e) => setExtractedData({ ...extractedData, merchant: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Location</label>
+                <label htmlFor="scan-location" className="text-sm font-medium">Location</label>
                 <Input
+                  id="scan-location"
                   value={extractedData.location}
                   onChange={(e) => setExtractedData({ ...extractedData, location: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Date</label>
+                <label htmlFor="scan-date" className="text-sm font-medium">Date</label>
                 <Input
+                  id="scan-date"
                   type="date"
                   value={extractedData.date}
                   onChange={(e) => setExtractedData({ ...extractedData, date: e.target.value })}
@@ -303,6 +362,7 @@ export default function Scan() {
                         size="icon"
                         className="h-9 w-9 text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/20"
                         onClick={() => handleDeleteItem(idx)}
+                        aria-label={`Remove item ${item.name || idx + 1}`}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -359,6 +419,7 @@ export default function Scan() {
                         size="icon"
                         className="h-9 w-9 text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/20"
                         onClick={() => handleDeleteItem(idx)}
+                        aria-label={`Remove item ${item.name || idx + 1}`}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -372,10 +433,12 @@ export default function Scan() {
                 </Button> */}
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Total Amount</label>
+                <label htmlFor="scan-total" className="text-sm font-medium">Total Amount</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold">{currencySymbol}</span>
                   <Input
+                    id="scan-total"
+                    inputMode="decimal"
                     className="pl-6 font-bold"
                     value={extractedData.total}
                     onChange={(e) => setExtractedData({ ...extractedData, total: e.target.value })}
@@ -384,6 +447,7 @@ export default function Scan() {
               </div>
             </div>
 
+            {scanError && <p role="alert" className="text-sm text-red-500">{scanError}</p>}
             <div className="flex gap-4 pt-4">
               <Button className="flex-1" onClick={handleSave}>
                 <Check className="mr-2 h-4 w-4" />

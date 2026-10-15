@@ -12,6 +12,20 @@ import { usePageTitle } from "../lib/usePageTitle"
 import { useCurrency } from "../context/CurrencyContext"
 import { getCurrencySymbol } from "../lib/currency"
 
+// Status as the viewer sees it: a member only cares whether *they* have paid; the payer
+// cares whether everyone has paid them back. `done` splits sink to the bottom of the list.
+function viewStatus(split, uid) {
+  const settledCount = split.participants.filter((p) => p.status === "settled").length
+  const allSettled = settledCount === split.participants.length
+  const myShare = split.participants.find((p) => p.userId === uid)
+  if (myShare && split.payerId !== uid) {
+    const paid = myShare.status === "settled"
+    return { done: paid, label: paid ? "Paid" : "Unpaid" }
+  }
+  // Payer sees overall progress; someone not in the split sees it too but has nothing to do
+  return { done: allSettled || !myShare, label: allSettled ? "Settled" : `${settledCount}/${split.participants.length} paid` }
+}
+
 export default function GroupDetail() {
   const [group, setGroup] = useState(null)
   usePageTitle(group?.name || "Group")
@@ -40,6 +54,11 @@ export default function GroupDetail() {
 
   const balances = useMemo(() => computeBalances(splits, user.uid), [splits, user.uid])
   const isCreator = group?.createdBy === user.uid
+  // Unpaid first; Array.sort is stable, so each half keeps the newest-first order
+  const orderedSplits = useMemo(
+    () => [...splits].sort((a, b) => viewStatus(a, user.uid).done - viewStatus(b, user.uid).done),
+    [splits, user.uid]
+  )
   const unsettledCount = splits.filter((s) => s.participants.some((p) => p.status !== "settled")).length
 
   const memberName = (uid) => group?.members.find((m) => m.userId === uid)?.displayName || balances.byMember[uid]?.displayName || "Member"
@@ -207,10 +226,10 @@ export default function GroupDetail() {
         )}
         {/* Stacked rows on mobile; tile grid from md up */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          {splits.map((s) => {
+          {orderedSplits.map((s) => {
             const myShare = s.participants.find((p) => p.userId === user.uid)
-            const settledCount = s.participants.filter((p) => p.status === "settled").length
-            const allSettled = settledCount === s.participants.length
+            const status = viewStatus(s, user.uid)
+            const badgeTone = status.done ? "bg-green-100 text-green-700" : "bg-ink/10 text-news"
             const payer = s.participants.find((p) => p.userId === s.payerId)
             const payerName = s.payerId === user.uid ? "you" : (payer?.displayName || "someone")
             const myPending = myShare && myShare.status !== "settled" && s.payerId !== user.uid
@@ -222,8 +241,8 @@ export default function GroupDetail() {
                   <div className="flex-1 min-w-0 md:flex-none">
                     <div className="flex items-start justify-between gap-2">
                       <p className="font-semibold text-ink truncate md:text-lg">{s.merchant}</p>
-                      <span className={`hidden md:inline-block text-xs px-2 py-0.5 rounded-full shrink-0 ${allSettled ? "bg-green-100 text-green-700" : "bg-ink/10 text-news"}`}>
-                        {allSettled ? "Settled" : `${settledCount}/${s.participants.length} settled`}
+                      <span className={`hidden md:inline-block text-xs px-2 py-0.5 rounded-full shrink-0 ${badgeTone}`}>
+                        {status.label}
                       </span>
                     </div>
                     <p className="text-xs text-news mt-0.5">{s.date}</p>
@@ -241,15 +260,12 @@ export default function GroupDetail() {
                           {currencySymbol}{myShare.amount.toFixed(2)}
                           <span className="md:hidden text-news font-normal text-xs"> your share</span>
                         </p>
-                        {myShare.status === "settled" && s.payerId !== user.uid && (
-                          <p className="hidden md:block text-xs text-green-600">You've settled</p>
-                        )}
                       </>
                     ) : (
                       <p className="text-xs text-news md:pt-1">Not included</p>
                     )}
-                    <span className={`md:hidden text-xs mt-1 inline-block px-2 py-0.5 rounded-full ${allSettled ? "bg-green-100 text-green-700" : "bg-ink/10 text-news"}`}>
-                      {allSettled ? "Settled" : "Pending"}
+                    <span className={`md:hidden text-xs mt-1 inline-block px-2 py-0.5 rounded-full ${badgeTone}`}>
+                      {status.label}
                     </span>
                   </div>
                 </CardContent>
@@ -265,11 +281,11 @@ export default function GroupDetail() {
         <CardContent className="pt-6 space-y-3">
           {confirming === null && (
             isCreator ? (
-              <Button variant="ghost" className="w-full justify-start gap-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" onClick={() => setConfirming("delete")}>
+              <Button variant="ghost" className="w-full justify-start gap-2 rounded-md duration-200 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-500/10" onClick={() => setConfirming("delete")}>
                 <Trash2 className="h-4 w-4" /> Delete group
               </Button>
             ) : (
-              <Button variant="ghost" className="w-full justify-start gap-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" onClick={() => setConfirming("leave")}>
+              <Button variant="ghost" className="w-full justify-start gap-2 rounded-md duration-200 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-500/10" onClick={() => setConfirming("leave")}>
                 <LogOut className="h-4 w-4" /> Leave group
               </Button>
             )

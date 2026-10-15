@@ -51,7 +51,7 @@ export default function Groups() {
 
   const renderNet = (value) => (
     <span className={`font-mono ${value > 0 ? "text-green-600" : value < 0 ? "text-red-500" : "text-news"}`}>
-      {value > 0 ? "+" : value < 0 ? "−" : ""}{currencySymbol}{Math.abs(value).toFixed(2)}
+      {value > 0 ? "+ " : value < 0 ? "− " : ""}{currencySymbol}{Math.abs(value).toFixed(2)}
     </span>
   )
 

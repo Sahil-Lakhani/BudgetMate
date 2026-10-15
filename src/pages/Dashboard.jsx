@@ -260,7 +260,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="p-0">
             <div className={`text-2xl font-bold font-sans ${stats.remainingSpendable < 0 ? 'text-red-500' : 'text-ink'}`}>
-              {formatCurrency(stats.remainingSpendable)}
+              {formatCurrency(Math.abs(stats.remainingSpendable))}
             </div>
             <p className="text-xs text-news mt-1">After savings & expenses</p>
           </CardContent>
@@ -272,7 +272,7 @@ export default function Dashboard() {
             <ArrowDownRight className="h-4 w-4 text-ink" />
           </CardHeader>
           <CardContent className="p-0">
-            <div className="text-2xl font-bold font-sans text-ink">{formatCurrency(stats.monthlyTotal)}</div>
+            <div className="text-2xl font-bold font-sans text-ink">{formatCurrency(Math.abs(stats.monthlyTotal))}</div>
             <p className="text-xs text-news mt-1">{new Date().toLocaleString('en-US', { month: 'long' })} expenses</p>
           </CardContent>
         </Card>
@@ -472,8 +472,8 @@ export default function Dashboard() {
                         {transaction.type === "refund" ? "Refund" : (transaction.lineItems?.[0]?.category || "General")} • {transaction.date}
                       </p>
                     </div>
-                    <div className={`font-bold font-sans text-sm ${transaction.type === "refund" ? "text-green-600" : "text-ink"}`}>
-                      {transaction.type === "refund" ? "+" : "-"}{formatCurrency(Math.abs(parseFloat(transaction.total)))}
+                    <div className={`font-bold font-sans text-sm ${transaction.type === "refund" ? "text-green-600" : "text-red-600"}`}>
+                      {formatCurrency((transaction.type === "refund" ? 1 : -1) * Math.abs(parseFloat(transaction.total)), { signed: true })}
                     </div>
                   </div>
                 ))

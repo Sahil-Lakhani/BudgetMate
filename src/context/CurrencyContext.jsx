@@ -28,7 +28,7 @@ export function CurrencyProvider({ children }) {
     }
   }
 
-  const formatCurrency = (amount) => _formatCurrency(amount, currency)
+  const formatCurrency = (amount, options) => _formatCurrency(amount, currency, options)
 
   return (
     <CurrencyContext.Provider value={{ currency, setCurrency, updateCurrency, formatCurrency }}>

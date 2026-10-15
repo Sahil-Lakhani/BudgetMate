@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* dark: utilities follow the app's theme toggle (.dark on <html>), not the OS setting */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-paper: var(--color-paper);
   --color-ink: var(--color-ink);
@@ -60,6 +63,17 @@
   scrollbar-width: none;
 }
 
+/* iOS Safari zooms the page when a focused form control's font-size is < 16px.
+   Keep controls at 16px on touch-sized screens; desktop keeps the design's text-sm.
+   Lives outside @layer so it beats Tailwind's text-sm utility. */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
 @layer base {
   :root {
     --color-paper: #F4F4F5; /* Zinc 100 */
@@ -98,3 +112,30 @@
     font-family: var(--font-sans);
   }
 }
+
+/* Visible keyboard focus everywhere (mouse clicks don't show it) */
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Legal pages: readable long-form text */
+.legal { line-height: 1.65; }
+.legal h1 { font-size: 1.875rem; font-weight: 700; line-height: 1.2; }
+.legal h2 { font-size: 1.25rem; font-weight: 700; margin-top: 2rem; margin-bottom: 0.5rem; }
+.legal p, .legal ul, .legal address { margin-top: 0.75rem; }
+.legal ul { list-style: disc; padding-left: 1.25rem; }
+.legal li + li { margin-top: 0.25rem; }
+.legal address { font-style: normal; }
+.legal a, .legal button { text-decoration: underline; }
+.legal code { font-size: 0.875em; background: var(--color-news-light); padding: 0.1em 0.3em; border-radius: 4px; }
+.legal section { scroll-margin-top: 1rem; }

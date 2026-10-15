@@ -134,15 +134,15 @@ export default function TransactionDetails() {
 								</div>
 							</div>
 							<div className=" items-center gap-2 text-news text-sm mt-1">
-								<div className={`text-xl font-bold md:hidden ${transaction.type === "refund" ? "text-green-600" : "text-ink"}`}>
-									{transaction.type === "refund" ? "+" : ""}{formatCurrency(Math.abs(parseFloat(transaction.total)))}
+								<div className={`text-xl font-bold md:hidden ${transaction.type === "refund" ? "text-green-600" : "text-red-600"}`}>
+									{formatCurrency((transaction.type === "refund" ? 1 : -1) * Math.abs(parseFloat(transaction.total)), { signed: true })}
 								</div>
 								<p className="font-bold text-news md:hidden text-right">{transaction.type === "refund" ? "Refund" : "Total"}</p>
 							</div>
 						</div>
 						<div className="text-left md:text-right hidden md:block">
-							<p className={`text-2xl font-bold ${transaction.type === "refund" ? "text-green-600" : "text-ink"}`}>
-								{transaction.type === "refund" ? "+" : ""}{formatCurrency(Math.abs(parseFloat(transaction.total)))}
+							<p className={`text-2xl font-bold ${transaction.type === "refund" ? "text-green-600" : "text-red-600"}`}>
+								{formatCurrency((transaction.type === "refund" ? 1 : -1) * Math.abs(parseFloat(transaction.total)), { signed: true })}
 							</p>
 							<p className="font-bold text-news">{transaction.type === "refund" ? "Refund" : "Total"}</p>
 						</div>

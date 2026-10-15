@@ -1,3 +1,8 @@
+// TODO:  Add a new layout for bigger screen where transaction on one side and if user clicks it sould show in the side panel of the transaciton screen on right side so that transaction on left side and details on right side without changing the above layout on bigger screen
+
+
+// todo: add filter button on the side of the search bar to show option for date price.
+
 import { localMonth } from "../lib/utils"
 import { useState, useEffect } from "react"
 import { Card, CardContentTransaction, CardHeader, CardTitle } from "../components/Card"
@@ -9,7 +14,7 @@ import { SplitTag } from "../components/SplitTag"
 import { useAuth } from "../context/AuthContext"
 import { useCurrency } from "../context/CurrencyContext"
 import { getUserTransactions } from "../lib/firestore"
-import { Link, useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { usePageTitle } from "../lib/usePageTitle"
 
 export default function Expenses() {
@@ -59,7 +64,6 @@ export default function Expenses() {
 
   // "YYYY-MM" → local date (new Date("YYYY-MM-01") is UTC and shows the previous month west of UTC)
   const monthDate = (key) => { const [y, m] = key.split("-").map(Number); return new Date(y, m - 1, 1) }
-  const monthLabel = (key, opts = { month: 'long', year: 'numeric' }) => monthDate(key).toLocaleDateString('en', opts)
 
   // Get unique months from transactions + current month
   const availableMonths = [...new Set([
@@ -68,43 +72,43 @@ export default function Expenses() {
   ])].sort().reverse()
 
   const filteredTransactions = transactions.filter((t) => {
-    // A transaction belongs to every category that any of its line items has
-    const itemCategories = (t.lineItems || []).map((i) => i.category).filter(Boolean)
-    const term = searchTerm.trim().toLowerCase()
+    // Determine category for filtering (use first line item or general)
+    const category = t.lineItems?.[0]?.category || "General"
 
-    const matchesSearch = !term ||
-      (t.merchant || "").toLowerCase().includes(term) ||
-      itemCategories.some((c) => c.toLowerCase().includes(term)) ||
-      (t.lineItems || []).some((i) => (i.name || "").toLowerCase().includes(term))
-    const matchesCategory = filterCategory === "All" || itemCategories.includes(filterCategory)
+    const matchesSearch = t.merchant.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      category.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = filterCategory === "All" || category === filterCategory
     const matchesMonth = t.date.startsWith(selectedMonth)
 
     return matchesSearch && matchesCategory && matchesMonth
   })
 
   // Extract unique categories from all transactions' line items
-  const categories = ["All", ...new Set(transactions.flatMap(t => t.lineItems?.map(i => i.category).filter(Boolean) || []))]
+  const categories = ["All", ...new Set(transactions.flatMap(t => t.lineItems?.map(i => i.category) || []))]
 
   if (loading) {
-    return <div role="status" className="p-8 text-center text-news">Loading expenses…</div>
+    return <div className="p-8 text-center text-news">Loading expenses...</div>
   }
 
   if (fetchError) {
-    return <div role="alert" className="p-8 text-center text-red-500">{fetchError}</div>
+    return <div className="p-8 text-center text-red-500">{fetchError}</div>
   }
 
   return (
-    <div className="space-y-3">
-      <h1 className="sr-only">Expenses</h1>
+    <div className="space-y-5">
+      {/* <div>
+        <h2 className="text-3xl font-sans font-bold text-ink text-center">Expenses</h2>
+        <p className="text-news">Manage your transaction history.</p>
+      </div> */}
 
       {/* Monthly Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-2 month-scroll">
         {availableMonths.map(month => {
-          const label = monthLabel(month)
+          const date = monthDate(month)
+          const label = date.toLocaleDateString('default', { month: 'long', year: 'numeric' })
           return (
             <Button
               key={month}
-              aria-pressed={selectedMonth === month}
               variant={selectedMonth === month ? "primary" : "outline"}
               className="whitespace-nowrap px-6 rounded-[8px]"
               onClick={() => setSelectedMonth(month)}
@@ -119,20 +123,17 @@ export default function Expenses() {
         <div className="relative w-full md:w-96">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-news" />
           <Input
-            type="search"
-            aria-label="Search expenses"
             className="pl-10 rounded-[8px]"
-            placeholder="Search merchant, item or category…"
+            placeholder="Search merchant or category..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto">
-          {categories.map(cat => (
+          {categories.slice(0, 5).map(cat => ( // Limit to 5 categories for UI
             <Button
-              className="rounded-[8px] shrink-0"
+              className="rounded-[8px]"
               key={cat}
-              aria-pressed={filterCategory === cat}
               variant={filterCategory === cat ? "primary" : "secondary"}
               size="sm"
               onClick={() => setFilterCategory(cat)}
@@ -145,36 +146,36 @@ export default function Expenses() {
 
       {/* Monthly Total and Add Transaction */}
       <div className="flex gap-3">
-        <div className="bg-card p-3 rounded-lg border border-border flex justify-between items-center shadow-sm flex-1">
+        <div className="bg-card px-5 py-3 rounded-lg border border-border flex justify-between items-center shadow-sm flex-1">
           <div>
             <p className="text-sm text-news font-medium">Total Expenses</p>
-            <p className="text-xs text-news/60">{monthLabel(selectedMonth)}</p>
+            <p className="text-xs text-news/60">{monthDate(selectedMonth).toLocaleDateString('default', { month: 'long', year: 'numeric' })}</p>
           </div>
           <p className="text-2xl font-bold text-ink">
-            {formatCurrency(filteredTransactions.reduce((sum, t) => sum + parseFloat(t.total), 0))}
+            {formatCurrency(Math.abs(filteredTransactions.reduce((sum, t) => sum + parseFloat(t.total), 0)))}
           </p>
         </div>
         <Button
           variant="primary"
           className="rounded-lg whitespace-nowrap px-6 h-auto"
           onClick={() => navigate("/expenses/add")}
-          aria-label="Add transaction"
         >
-          <Plus className="h-6 w-12 md:mr-2" aria-hidden="true" />
+          <Plus className="h-6 w-12 md:mr-2" />
           <span className="hidden md:inline">Add Transaction</span>
         </Button>
       </div>
 
       <Card>
-        <CardContentTransaction>
-          <div className="space-y-2 my-2">
+        <CardContentTransaction className="px-5 py-2">
+          <div className="my-3">
             {filteredTransactions.length > 0 ? (
               filteredTransactions.map((transaction) => (
-                <div key={transaction.id}>
-                  <Link
-                    to={`/expenses/${transaction.id}`}
-                    className="flex items-center justify-between gap-3 bg-card rounded-lg p-1 -m-1 hover:bg-news-light/20"
-                  >
+                <div
+                  key={transaction.id}
+                  className="bg-card  cursor-pointer rounded-lg"
+                  onClick={() => navigate(`/expenses/${transaction.id}`)}
+                >
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="h-10 w-10 bg-news-light/20 flex items-center justify-center rounded-full">
                         {getCategoryIcon(transaction.lineItems?.[0]?.category || "General")}
@@ -190,22 +191,20 @@ export default function Expenses() {
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className={`font-bold text-lg ${transaction.type === "refund" ? "text-green-600" : "text-ink"}`}>
-                        {transaction.type === "refund" ? "+ " : "- "}{formatCurrency(Math.abs(parseFloat(transaction.total)))}
+                      <span className={`font-bold text-lg ${transaction.type === "refund" ? "text-green-600" : "text-red-600"}`}>
+                        {formatCurrency((transaction.type === "refund" ? 1 : -1) * Math.abs(parseFloat(transaction.total)), { signed: true })}
                       </span>
-                      <ChevronRight className="h-4 w-4 text-ink" aria-hidden="true" />
+                      <ChevronRight className="h-4 w-4 text-ink" />
                     </div>
-                  </Link>
+                  </div>
                   {transaction !== filteredTransactions[filteredTransactions.length - 1] && (
-                    <div className="border-b border-gray-500 my-3 mx-2" />
+                    <div className="border-b border-border my-4" />
                   )}
                 </div>
               ))
             ) : (
               <div className="text-center py-12 text-news">
-                {searchTerm || filterCategory !== "All"
-                  ? "No transactions match your search."
-                  : `No transactions in ${monthLabel(selectedMonth, { month: 'long' })}.`}
+                No transactions found for {monthDate(selectedMonth).toLocaleDateString('default', { month: 'long' })}.
               </div>
             )}
           </div>
